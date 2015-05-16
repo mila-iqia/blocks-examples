@@ -28,7 +28,8 @@ from blocks.extensions.saveload import Checkpoint
 from blocks.extensions.monitoring import TrainingDataMonitoring
 from blocks.main_loop import MainLoop
 from blocks.select import Selector
-from examples.markov_chain.dataset import MarkovChainDataset
+
+from dataset import MarkovChainDataset
 
 sys.setrecursionlimit(10000)
 floatX = theano.config.floatX

@@ -1,6 +1,6 @@
 import tempfile
 
-from markov_chain.main import main
+from markov_chain import main
 
 
 def test_markov_chain():

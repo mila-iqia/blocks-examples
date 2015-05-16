@@ -28,4 +28,5 @@ install:
   - pip install -q git+git://github.com/bartvm/blocks.git -r https://raw.githubusercontent.com/bartvm/blocks/master/requirements.txt
 script:
   - curl https://raw.githubusercontent.com/bartvm/fuel/download_travis/.travis-data.sh | bash -s -- mnist
+  - bokeh-server &> /dev/null &
   - nose2 tests

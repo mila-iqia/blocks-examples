@@ -22,7 +22,7 @@ before_install:
   - export FUEL_DATA_PATH=$TRAVIS_BUILD_DIR/data
 install:
   # Install all Python dependencies
-  - curl -O https://raw.githubusercontent.com/bartvm/blocks/master/req-travis-{conda,pip}.txt
+  - curl -O -O https://raw.githubusercontent.com/bartvm/blocks/master/req-travis-{conda,pip}.txt
   - conda install -q --yes python=$TRAVIS_PYTHON_VERSION mkl --file req-travis-conda.txt
   - pip install -q -r req-travis-pip.txt
 script:

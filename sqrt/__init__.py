@@ -23,10 +23,11 @@ from fuel.datasets import IterableDataset
 from fuel.transformers import Batch, Mapping
 from fuel.schemes import ConstantScheme
 from blocks.extensions import FinishAfter, Timing, Printing
-from blocks.extensions.saveload import LoadFromDump, Dump
+from blocks.extensions.saveload import Checkpoint
 from blocks.extensions.monitoring import (TrainingDataMonitoring,
                                           DataStreamMonitoring)
 from blocks.main_loop import MainLoop
+from blocks.serialization import continue_training
 
 floatX = theano.config.floatX
 
@@ -48,6 +49,8 @@ def get_data_stream(iterable):
 
 
 def main(save_to, num_batches, continue_=False):
+    if continue_:
+        continue_training(save_to)
     mlp = MLP([Tanh(), Identity()], [1, 10, 1],
               weights_init=IsotropicGaussian(0.01),
               biases_init=Constant(0), seed=1)
@@ -63,14 +66,14 @@ def main(save_to, num_batches, continue_=False):
             step_rule=Scale(learning_rate=0.001)),
         get_data_stream(range(100)),
         model=Model(cost),
-        extensions=([LoadFromDump(save_to)] if continue_ else []) +
-        [Timing(),
+        extensions=[
+            Timing(),
             FinishAfter(after_n_batches=num_batches),
             DataStreamMonitoring(
                 [cost], get_data_stream(range(100, 200)),
                 prefix="test"),
             TrainingDataMonitoring([cost], after_epoch=True),
-            Dump(save_to),
+            Checkpoint(save_to),
             Printing()])
     main_loop.run()
     return main_loop

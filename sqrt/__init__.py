@@ -48,10 +48,7 @@ def get_data_stream(iterable):
     return Batch(data_stream, ConstantScheme(20))
 
 
-def main(save_to, num_batches, continue_=False):
-    if continue_:
-        continue_training(save_to)
-        return
+def main(save_to, num_batches):
     mlp = MLP([Tanh(), Identity()], [1, 10, 1],
               weights_init=IsotropicGaussian(0.01),
               biases_init=Constant(0), seed=1)

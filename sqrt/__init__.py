@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 """Super-basic example, mainly for testing purposes.
 
-This script trains a tiny network to compute square root. It also
-serves as an example of using dumping.
+This script trains a tiny network to compute square root.
 
 """
 import logging

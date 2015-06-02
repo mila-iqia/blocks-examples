@@ -2,7 +2,7 @@ import logging
 from argparse import ArgumentParser
 import numpy
 
-from theano import tensor, function
+from theano import tensor
 
 from blocks.algorithms import GradientDescent, Scale
 from blocks.bricks import MLP, Rectifier, Initializable, FeedforwardSequence, Softmax

@@ -21,7 +21,6 @@ from blocks.extensions import FinishAfter, Timing, Printing
 from blocks.extensions.saveload import Checkpoint
 from blocks.extensions.monitoring import (DataStreamMonitoring,
                                           TrainingDataMonitoring)
-from blocks.extensions.plot import Plot
 from blocks.main_loop import MainLoop
 
 
@@ -65,14 +64,6 @@ def main(save_to, num_epochs, bokeh=False):
                       after_epoch=True),
                   Checkpoint(save_to),
                   Printing()]
-
-    if bokeh:
-        extensions.append(Plot(
-            'MNIST example',
-            channels=[
-                ['test_final_cost',
-                 'test_misclassificationrate_apply_error_rate'],
-                ['train_total_gradient_norm']]))
 
     main_loop = MainLoop(
         algorithm,

@@ -28,10 +28,39 @@ from blocks.utils import named_copy
 
 
 class LeNet(FeedforwardSequence, Initializable):
+    """LeNet convolutional network.
+
+    LeNet is a convolutional sequence with an MLP on top (several
+    fully-connected layers).
+
+    Parameters
+    ----------
+    conv_activations : list of :class:`.Brick`
+        Activations for convolutional network.
+    num_channels : int
+        Number of channels in the input image.
+    image_shape : tuple
+        Input image shape.
+    filter_sizes : list of tuples
+        Filter sizes of :class:`.blocks.conv.ConvolutionalLayer`.
+    feature_maps : list
+        Number of filters for each of convolutions.
+    pooling_sizes : list of tuples
+        Sizes of max pooling for each convolutional layer.
+    top_mlp_activations : list of :class:`.blocks.bricks.Activation`
+        List of activations for the top MLP.
+    top_mlp_dims : list
+        Numbers of hidden units and the output dimension of the top MLP.
+    conv_step : tuples
+        Step of convolution (similar for all layers).
+    border_mode : str
+        Border mode of convolution (similar for all layers).
+
+    """
     def __init__(self, conv_activations, num_channels, image_shape,
                  filter_sizes, feature_maps, pooling_sizes,
-                 top_mlp_activations, top_mlp_dims, conv_step=None,
-                 border_mode='valid', **kwargs):
+                 top_mlp_activations, top_mlp_dims,
+                 conv_step=None, border_mode='valid', **kwargs):
         if conv_step is None:
             self.conv_step = (1, 1)
         else:
@@ -44,6 +73,8 @@ class LeNet(FeedforwardSequence, Initializable):
 
         params = zip(conv_activations, filter_sizes, feature_maps,
                      pooling_sizes)
+
+        # Construct convolutional layers with corresponding parameters
         self.layers = [ConvolutionalLayer(filter_size=filter_size,
                                           num_filters=num_filter,
                                           pooling_size=pooling_size,
@@ -58,11 +89,15 @@ class LeNet(FeedforwardSequence, Initializable):
                                                    image_size=image_shape)
 
         application_methods = [self.conv_sequence.apply]
+
+        # Construct a top MLP
         self.top_mlp = MLP(top_mlp_activations, top_mlp_dims)
+
+        # We need to flatten the output of the last convolutional layer.
+        # This brick accepts a tensor of dimension (batch_size, ...) and
+        # returns a matrix (batch_size, features)
         self.flattener = Flattener()
-        if len(top_mlp_activations) > 0:
-            application_methods += [self.flattener.apply]
-            application_methods += [self.top_mlp.apply]
+        application_methods.extend([self.flattener.apply, self.top_mlp.apply])
         super(LeNet, self).__init__(application_methods, **kwargs)
 
     @property
@@ -91,14 +126,18 @@ def main(save_to, num_epochs, bokeh=False, feature_maps=None,
         conv_sizes = [5, 5]
     if pool_sizes is None:
         pool_sizes = [2, 2]
+    image_size = (28, 28)
+    output_size = 10
+
+    # Use ReLUs everywhere and softmax for the final prediction
     conv_activations = [Rectifier() for _ in feature_maps]
     mlp_activations = [Rectifier() for _ in mlp_hiddens] + [Softmax()]
-    convnet = LeNet(conv_activations, 1, (28, 28),
+    convnet = LeNet(conv_activations, 1, image_size,
                     filter_sizes=zip(conv_sizes, conv_sizes),
                     feature_maps=feature_maps,
                     pooling_sizes=zip(pool_sizes, pool_sizes),
                     top_mlp_activations=mlp_activations,
-                    top_mlp_dims=mlp_hiddens + [10],
+                    top_mlp_dims=mlp_hiddens + [output_size],
                     border_mode='full',
                     weights_init=IsotropicGaussian(0.1),
                     biases_init=Constant(0))
@@ -106,6 +145,8 @@ def main(save_to, num_epochs, bokeh=False, feature_maps=None,
 
     x = tensor.tensor3('features')
     y = tensor.lmatrix('targets')
+
+    # Add a channel axis since MNIST is black and white
     probs = convnet.apply(x.dimshuffle(0, 'x', 1, 2))
     cost = named_copy(CategoricalCrossEntropy().apply(y.flatten(),
                       probs), 'cost')
@@ -127,6 +168,7 @@ def main(save_to, num_epochs, bokeh=False, feature_maps=None,
                                    iteration_scheme=SequentialScheme(
                                        mnist_test.num_examples, 100))
 
+    # Train with simple SGD
     algorithm = GradientDescent(
         cost=train_cost, params=cg_train.parameters,
         step_rule=Scale(learning_rate=0.01))

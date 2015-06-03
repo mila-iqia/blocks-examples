@@ -177,5 +177,5 @@ if __name__ == "__main__":
     parser.add_argument("--conv-sizes", type=int, default=None)
     parser.add_argument("--pool-sizes", type=int, default=None)
     args = parser.parse_args()
-    main(args.save_to, args.num_epochs, args.bokeh)
+    main(**vars(args))
 

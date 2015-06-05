@@ -13,8 +13,7 @@ from blocks.initialization import IsotropicGaussian, Constant
 from fuel.streams import DataStream
 from fuel.datasets import MNIST
 from fuel.schemes import SequentialScheme
-from blocks.filter import VariableFilter
-from blocks.graph import ComputationGraph, apply_dropout
+from blocks.graph import ComputationGraph
 from blocks.model import Model
 from blocks.monitoring import aggregation
 from blocks.extensions import FinishAfter, Timing, Printing
@@ -23,15 +22,20 @@ from blocks.extensions.monitoring import (DataStreamMonitoring,
                                           TrainingDataMonitoring)
 from blocks.extensions.plot import Plot
 from blocks.main_loop import MainLoop
-from blocks.roles import INPUT
 from blocks.utils import named_copy
 
 
 class LeNet(FeedforwardSequence, Initializable):
     """LeNet convolutional network.
 
-    LeNet is a convolutional sequence with an MLP on top (several
-    fully-connected layers).
+    The class implements LeNet-5, which is a convolutional sequence with
+    an MLP on top (several fully-connected layers). For details see
+    [LeCun95]_.
+
+    .. [LeCun95] LeCun, Yann, et al.
+       *Comparison of learning algorithms for handwritten digit
+       recognition.*,
+       International conference on artificial neural networks. Vol. 60.
 
     Parameters
     ----------
@@ -119,9 +123,9 @@ class LeNet(FeedforwardSequence, Initializable):
 def main(save_to, num_epochs, bokeh=False, feature_maps=None,
          mlp_hiddens=None, conv_sizes=None, pool_sizes=None):
     if feature_maps is None:
-        feature_maps = [4, 6]
+        feature_maps = [6, 16]
     if mlp_hiddens is None:
-        mlp_hiddens = [500]
+        mlp_hiddens = [120, 84]
     if conv_sizes is None:
         conv_sizes = [5, 5]
     if pool_sizes is None:
@@ -143,27 +147,24 @@ def main(save_to, num_epochs, bokeh=False, feature_maps=None,
                     biases_init=Constant(0))
     convnet.initialize()
 
-    x = tensor.tensor3('features')
+    x = tensor.tensor4('features')
     y = tensor.lmatrix('targets')
 
-    # Add a channel axis since MNIST is black and white
-    probs = convnet.apply(x.dimshuffle(0, 'x', 1, 2))
+    probs = convnet.apply(x)
     cost = named_copy(CategoricalCrossEntropy().apply(y.flatten(),
                       probs), 'cost')
     error_rate = named_copy(MisclassificationRate().apply(y.flatten(), probs),
                             'error_rate')
 
     cg = ComputationGraph([cost, error_rate])
-    vars_for_dropout = VariableFilter(
-        roles=[INPUT], bricks=[convnet.top_mlp])(cg.variables)
-    cg_train = apply_dropout(cg, vars_for_dropout, 0.5)
+    cg_train = cg
     train_cost, train_error_rate = cg_train.outputs
 
-    mnist_train = MNIST("train", flatten=False)
+    mnist_train = MNIST("train")
     mnist_train_stream = DataStream(dataset=mnist_train,
                                     iteration_scheme=SequentialScheme(
                                         mnist_train.num_examples, 100))
-    mnist_test = MNIST("test", flatten=False)
+    mnist_test = MNIST("test")
     mnist_test_stream = DataStream(dataset=mnist_test,
                                    iteration_scheme=SequentialScheme(
                                        mnist_test.num_examples, 100))

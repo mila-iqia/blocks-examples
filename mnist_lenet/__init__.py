@@ -5,7 +5,8 @@ import numpy
 from theano import tensor
 
 from blocks.algorithms import GradientDescent, Scale
-from blocks.bricks import MLP, Rectifier, Initializable, FeedforwardSequence, Softmax
+from blocks.bricks import (MLP, Rectifier, Initializable, FeedforwardSequence,
+                           Softmax)
 from blocks.bricks.conv import (
     ConvolutionalLayer, ConvolutionalSequence, Flattener)
 from blocks.bricks.cost import CategoricalCrossEntropy, MisclassificationRate
@@ -143,14 +144,15 @@ def main(save_to, num_epochs, bokeh=False, feature_maps=None,
                     top_mlp_activations=mlp_activations,
                     top_mlp_dims=mlp_hiddens + [output_size],
                     border_mode='full',
-                    weights_init=IsotropicGaussian(0.1),
+                    weights_init=IsotropicGaussian(0.01),
                     biases_init=Constant(0))
     convnet.initialize()
 
     x = tensor.tensor4('features')
     y = tensor.lmatrix('targets')
 
-    probs = convnet.apply(x)
+    # Normalize input and apply the convnet
+    probs = convnet.apply((x / 256.) - 0.5)
     cost = named_copy(CategoricalCrossEntropy().apply(y.flatten(),
                       probs), 'cost')
     error_rate = named_copy(MisclassificationRate().apply(y.flatten(), probs),
@@ -172,7 +174,7 @@ def main(save_to, num_epochs, bokeh=False, feature_maps=None,
     # Train with simple SGD
     algorithm = GradientDescent(
         cost=train_cost, params=cg_train.parameters,
-        step_rule=Scale(learning_rate=0.01))
+        step_rule=Scale(learning_rate=0.001))
     extensions = [Timing(),
                   FinishAfter(after_n_epochs=num_epochs),
                   DataStreamMonitoring(

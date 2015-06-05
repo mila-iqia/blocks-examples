@@ -25,8 +25,7 @@ install:
   - curl -O https://raw.githubusercontent.com/bartvm/blocks/master/req-travis-conda.txt
   - conda install -q --yes python=$TRAVIS_PYTHON_VERSION mkl --file req-travis-conda.txt
   - pip install -q -r https://raw.githubusercontent.com/bartvm/blocks/master/req-travis-pip.txt
-  - pip install -q git+git://github.com/bartvm/blocks.git -r https://raw.githubusercontent.com/bartvm/blocks/master/requirements.txt
-  - curl https://raw.githubusercontent.com/bartvm/fuel/download_travis/.travis-data.sh | bash -s -- mnist
+  - pip install -q git+git://github.com/dmitriy-serdyuk/blocks.git@custom_pickler -r https://raw.githubusercontent.com/bartvm/blocks/master/requirements.txt
 script:
   - export THEANO_FLAGS=floatX=$FLOATX,optimizer=fast_compile
   - export FUEL_FLOATX=$FLOATX

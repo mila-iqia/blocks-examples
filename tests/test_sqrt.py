@@ -6,7 +6,6 @@ from sqrt import main
 
 
 def test_sqrt():
-    save_path = tempfile.mkdtemp()
-    main(save_path, 7)
-    main_loop = main(save_path, 14, continue_=True)
-    assert main_loop.log[7][SAVED_TO] == save_path
+    save_path = tempfile.mktemp()
+    main_loop = main(save_path, 7)
+    assert main_loop.log[7][SAVED_TO][0] == save_path

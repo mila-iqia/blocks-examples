@@ -7,7 +7,14 @@ learns to reverse each word (on a character-by-character basis) in its input tex
 The default training data is the Google Billion Word corpus, 
 which you should download and put to the path indicated in your .fuelrc file.
 
+As an example, the first sentence should be transformed into the second:
+
+* "The quick brown fox jumps over the lazy dog." <- INPUT
+* "eht kciuq nworb xof spmuj revo eht yzal god." <- OUTPUT
+
+
 The bulk of the functionality of the code is in the ``__init__.py`` file.
+
 
 Structure of the Data
 --------------------------
@@ -47,4 +54,27 @@ At each time-step :
   connects to *TO-FIGURE-OUT*
 * the final output is read via a ``SoftmaxEmitter`` and converted to characters 
 * and is then fed back to the input via a `LookupFeedback` *TO-FIGURE-OUT*
+
+
+Structure of the Training
+--------------------------
+
+The training algorithm uses ``GradientDescent`` with a maximum 
+step-size (``StepClipping(10.0)``) applied to 
+the mean over 
+the batch of 
+the sums of 
+the log-likelihood costs associated with 
+errors on the character outputs for 
+each sentence.
+
+
+Structure of the Testing
+--------------------------
+
+There are two modes available, which are defined within the ``generate(_input)`` 
+local function definition: 
+
+* ``beam_search`` which does a ``BeamSearch`` for the most likely output sequence, given an input sentence
+* ``sample`` which instead produces a number of guesses at the output sentence
 

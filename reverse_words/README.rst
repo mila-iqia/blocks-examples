@@ -9,8 +9,8 @@ which you should download and put to the path indicated in your .fuelrc file.
 
 As an example, the first sentence should be transformed into the second:
 
-* "The quick brown fox jumps over the lazy dog." <- INPUT
-* "eht kciuq nworb xof spmuj revo eht yzal god." <- OUTPUT
+* ``The quick brown fox jumps over the lazy dog.`` <- INPUT
+* ``eht kciuq nworb xof spmuj revo eht yzal god.`` <- OUTPUT
 
 
 The bulk of the functionality of the code is in the ``__init__.py`` file.

@@ -72,17 +72,26 @@ The model itself is ``Bidirectional``, with ``SimpleRecurrent`` units.  This mea
 that the model will contain two chains of SimpleRecurrent units, going forwards and
 backwards along the sequence of characters in the sentence.
 
-At each time-step :
+At each time-step on the ``encoder`` level (which corresponds to 
+characters in the input stream) :
 
 * the current character is mapped to an embedding vector
 * the input has ``Fork`` applied, so that it can be fed via weights into 
   the different input paths of ``Birectectional/SimpleRecurrent`` units 
   (http://blocks.readthedocs.org/en/latest/api/bricks.html?highlight=fork#blocks.bricks.parallel.Fork)
-* and there is an attention mechanism (using ``SequenceContentAttention``) that 
-  calculates 'glimpses' of the input data by *TO-FIGURE-OUT*
+
+Once the underlying ``Bidirectional/SimpleRecurrent`` unit states are calculated, 
+a ``SequenceGenerator`` scans across them using an attention mechanism 
+(``SequenceContentAttention``).  This ``SequenceGenerator`` contains another 
+recurrent network (``transition``) that converts the ``encoder`` state into
+an output sequence : 
+
+* the attention mechanism calculates an alignment between the internal ``encoder`` 
+  state and the previous output states
   (http://blocks.readthedocs.org/en/latest/api/bricks.html?highlight=sequencecontentattention#blocks.bricks.attention.SequenceContentAttention)
 * the final output of the ``SequenceGenerator`` is read via a ``SoftmaxEmitter`` and converted to characters 
-* and is then fed back to the input via a `LookupFeedback` *TO-FIGURE-OUT*
+* and it feeds this result back to the ``transition`` recurrent level 
+  via a `LookupFeedback`
 
 
 

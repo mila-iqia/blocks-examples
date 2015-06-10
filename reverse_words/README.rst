@@ -1,5 +1,5 @@
-Learn to reverse the letters in each word in text
-============================================================
+Learn to reverse the letters of each individual word in a text
+================================================================
 
 In this demo, a recurrent network equipped with an attention mechanism
 learns to reverse each word (on a character-by-character basis) in its input text. 

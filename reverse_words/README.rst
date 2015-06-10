@@ -1,12 +1,11 @@
 Learn to reverse the letters in each word in text
 ============================================================
 
-In this demo a recurrent network equipped with an attention mechanism
-learns to reverse each word (on a character-by-character basis) in the input text. 
+In this demo, a recurrent network equipped with an attention mechanism
+learns to reverse each word (on a character-by-character basis) in its input text. 
 
 The default training data is the Google Billion Word corpus, 
 which you should download and put to the path indicated in your .fuelrc file.
-
 
 The bulk of the functionality of the code is in the ``__init__.py`` file.
 
@@ -37,13 +36,13 @@ Structure of the Model
   a ``dimension`` dimensional vector (so that ``dimension`` is doing double-duty as the
   size of the internal recurrence, and the size of the vector embedding)
 
-The model itself is Bidirectional, with SimpleRecurrent units.  This means
+The model itself is ``Bidirectional``, with ``SimpleRecurrent`` units.  This means
 *TO-FIGURE-OUT*
 
 At each time-step :
 
 * the current character is mapped to an embedding vector
-* the input is ``Fork``ed, so that *TO-FIGURE-OUT*
+* the input has ``Fork`` applied, so that *TO-FIGURE-OUT*
 * and there is an attention mechanism (using ``SequenceContentAttention``) that 
   connects to *TO-FIGURE-OUT*
 * the final output is read via a ``SoftmaxEmitter`` and converted to characters 

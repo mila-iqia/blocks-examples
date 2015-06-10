@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 """Learn to reverse the letters in each word in text
 
-In this demo a recurrent network equipped with an attention mechanism
-learns to reverse each word (on a character-by-character basis) in the input text. 
-
-The default training data is the Google Billion Word corpus, 
+In this demo, a recurrent network equipped with an attention mechanism
+learns to reverse each word (on a character-by-character basis) in 
+its input text. The default training data is the Google Billion Word corpus, 
 which you should download and put to the path indicated in your .fuelrc file.
 
 """

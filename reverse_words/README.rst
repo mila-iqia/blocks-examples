@@ -23,7 +23,8 @@ The bulk of the functionality of the code is in the ``__init__.py`` file.
 Overall, the model described seems to be as in the paper by Dzmitry Bahdanau, Kyunghyun Cho, Yoshua Bengio (2014) :
 
 .. figure:: 1409.0473v6.Figure1.438x549.png
-   :scale: 50 %
+   :scale: 50%
+   :align: center
    :alt: Figure 1
 
    Figure 1 of `Neural Machine Translation by Jointly Learning to Align and Translate <http://arxiv.org/abs/1409.0473>`_

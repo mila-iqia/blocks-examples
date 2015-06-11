@@ -10,14 +10,14 @@ from blocks.bricks import (MLP, Rectifier, Initializable, FeedforwardSequence,
 from blocks.bricks.conv import (
     ConvolutionalLayer, ConvolutionalSequence, Flattener)
 from blocks.bricks.cost import CategoricalCrossEntropy, MisclassificationRate
-from blocks.initialization import IsotropicGaussian, Constant
+from blocks.initialization import Constant, Uniform
 from fuel.streams import DataStream
 from fuel.datasets import MNIST
-from fuel.schemes import SequentialScheme
+from fuel.schemes import ShuffledScheme
 from blocks.graph import ComputationGraph
 from blocks.model import Model
 from blocks.monitoring import aggregation
-from blocks.extensions import FinishAfter, Timing, Printing
+from blocks.extensions import FinishAfter, Timing, Printing, ProgressBar
 from blocks.extensions.saveload import Checkpoint
 from blocks.extensions.monitoring import (DataStreamMonitoring,
                                           TrainingDataMonitoring)
@@ -26,9 +26,9 @@ from blocks.utils import named_copy
 
 
 class LeNet(FeedforwardSequence, Initializable):
-    """LeNet convolutional network.
+    """LeNet-like convolutional network.
 
-    The class implements LeNet-5, which is a convolutional sequence with
+    The class implements LeNet, which is a convolutional sequence with
     an MLP on top (several fully-connected layers). For details see
     [LeCun95]_.
 
@@ -92,7 +92,6 @@ class LeNet(FeedforwardSequence, Initializable):
         self.conv_sequence = ConvolutionalSequence(self.layers, num_channels,
                                                    image_size=image_shape)
 
-        application_methods = [self.conv_sequence.apply]
 
         # Construct a top MLP
         self.top_mlp = MLP(top_mlp_activations, top_mlp_dims)
@@ -101,7 +100,8 @@ class LeNet(FeedforwardSequence, Initializable):
         # This brick accepts a tensor of dimension (batch_size, ...) and
         # returns a matrix (batch_size, features)
         self.flattener = Flattener()
-        application_methods.extend([self.flattener.apply, self.top_mlp.apply])
+        application_methods = [self.conv_sequence.apply, self.flattener.apply,
+                               self.top_mlp.apply]
         super(LeNet, self).__init__(application_methods, **kwargs)
 
     @property
@@ -121,11 +121,11 @@ class LeNet(FeedforwardSequence, Initializable):
 
 
 def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
-         conv_sizes=None, pool_sizes=None):
+         conv_sizes=None, pool_sizes=None, batch_size=500):
     if feature_maps is None:
-        feature_maps = [6, 16]
+        feature_maps = [20, 50]
     if mlp_hiddens is None:
-        mlp_hiddens = [120, 84]
+        mlp_hiddens = [500]
     if conv_sizes is None:
         conv_sizes = [5, 5]
     if pool_sizes is None:
@@ -143,9 +143,21 @@ def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
                     top_mlp_activations=mlp_activations,
                     top_mlp_dims=mlp_hiddens + [output_size],
                     border_mode='full',
-                    weights_init=IsotropicGaussian(0.01),
+                    weights_init=Uniform(width=.2),
                     biases_init=Constant(0))
+    # We push initialization config to set different initialization schemes
+    # for convolutional layers.
+    convnet.push_initialization_config()
+    convnet.layers[0].weights_init = Uniform(width=.2)
+    convnet.layers[1].weights_init = Uniform(width=.09)
+    convnet.top_mlp.linear_transformations[0].weights_init = Uniform(width=.08)
+    convnet.top_mlp.linear_transformations[1].weights_init = Uniform(width=.11)
     convnet.initialize()
+    logging.info("Input dim: {} {} {}".format(
+        *convnet.children[0].get_dim('input_')))
+    for i, layer in enumerate(convnet.layers):
+        logging.info("Layer {} dim: {} {} {}".format(
+            i, *layer.get_dim('output')))
 
     x = tensor.tensor4('features')
     y = tensor.lmatrix('targets')
@@ -163,17 +175,20 @@ def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
 
     mnist_train = MNIST("train")
     mnist_train_stream = DataStream(dataset=mnist_train,
-                                    iteration_scheme=SequentialScheme(
-                                        mnist_train.num_examples, 100))
+                                    iteration_scheme=ShuffledScheme(
+                                        mnist_train.num_examples, batch_size))
     mnist_test = MNIST("test")
     mnist_test_stream = DataStream(dataset=mnist_test,
-                                   iteration_scheme=SequentialScheme(
-                                       mnist_test.num_examples, 100))
+                                   iteration_scheme=ShuffledScheme(
+                                       mnist_test.num_examples, batch_size))
 
     # Train with simple SGD
     algorithm = GradientDescent(
         cost=train_cost, params=cg_train.parameters,
-        step_rule=Scale(learning_rate=0.001))
+        step_rule=Scale(learning_rate=0.1))
+    # `Timing` extension reports time for reading data, aggregating a batch
+    # and monitoring;
+    # `ProgressBar` displays a nice progress bar during training.
     extensions = [Timing(),
                   FinishAfter(after_n_epochs=num_epochs),
                   DataStreamMonitoring(
@@ -186,6 +201,7 @@ def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
                       prefix="train",
                       after_epoch=True),
                   Checkpoint(save_to),
+                  ProgressBar(),
                   Printing()]
 
     model = Model(cost)
@@ -200,17 +216,25 @@ def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    parser = ArgumentParser("An example of training an MLP on"
-                            " the MNIST dataset.")
+    parser = ArgumentParser("An example of training a convolutional network "
+                            "on the MNIST dataset.")
     parser.add_argument("--num-epochs", type=int, default=2,
                         help="Number of training epochs to do.")
     parser.add_argument("save_to", default="mnist.pkl", nargs="?",
-                        help=("Destination to save the state of the training "
-                              "process."))
-    parser.add_argument("--feature-maps", type=int, default=None)
-    parser.add_argument("--mlp-hiddens", type=int, default=None)
-    parser.add_argument("--conv-sizes", type=int, default=None)
-    parser.add_argument("--pool-sizes", type=int, default=None)
+                        help="Destination to save the state of the training "
+                             "process.")
+    parser.add_argument("--feature-maps", type=int, nargs='+',
+                        default=[20, 50], help="List of feature maps numbers.")
+    parser.add_argument("--mlp-hiddens", type=int, nargs='+', default=[500],
+                        help="List of numbers of hidden units for the MLP.")
+    parser.add_argument("--conv-sizes", type=int, nargs='+', default=[5, 5],
+                        help="Convolutional kernels sizes. The kernels are "
+                        "always square.")
+    parser.add_argument("--pool-sizes", type=int, nargs='+', default=[2, 2],
+                        help="Pooling sizes. The pooling windows are always "
+                             "square.")
+    parser.add_argument("--batch_size", type=int, default=500,
+                        help="Batch size.")
     args = parser.parse_args()
     main(**vars(args))
 

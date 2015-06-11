@@ -8,8 +8,8 @@ It is going to reach around 0.8% error rate on the test set.
 
 """
 import logging
-from argparse import ArgumentParser
 import numpy
+from argparse import ArgumentParser
 
 from theano import tensor
 
@@ -19,19 +19,19 @@ from blocks.bricks import (MLP, Rectifier, Initializable, FeedforwardSequence,
 from blocks.bricks.conv import (
     ConvolutionalLayer, ConvolutionalSequence, Flattener)
 from blocks.bricks.cost import CategoricalCrossEntropy, MisclassificationRate
-from blocks.initialization import Constant, Uniform
-from fuel.streams import DataStream
-from fuel.datasets import MNIST
-from fuel.schemes import ShuffledScheme
 from blocks.graph import ComputationGraph
+from blocks.initialization import Constant, Uniform
+from blocks.main_loop import MainLoop
 from blocks.model import Model
 from blocks.monitoring import aggregation
 from blocks.extensions import FinishAfter, Timing, Printing, ProgressBar
-from blocks.extensions.saveload import Checkpoint
 from blocks.extensions.monitoring import (DataStreamMonitoring,
                                           TrainingDataMonitoring)
-from blocks.main_loop import MainLoop
+from blocks.extensions.saveload import Checkpoint
 from blocks.utils import named_copy
+from fuel.datasets import MNIST
+from fuel.schemes import ShuffledScheme
+from fuel.streams import DataStream
 
 
 class LeNet(FeedforwardSequence, Initializable):

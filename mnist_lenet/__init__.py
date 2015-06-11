@@ -1,3 +1,12 @@
+"""Convolutional network example.
+
+Run the training for 50 epochs with
+```
+python __init__.py --num-epochs 50
+```
+It is going to reach around 0.8% error rate on the test set.
+
+"""
 import logging
 from argparse import ArgumentParser
 import numpy

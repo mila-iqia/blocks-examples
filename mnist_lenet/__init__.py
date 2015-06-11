@@ -19,20 +19,19 @@ from blocks.bricks import (MLP, Rectifier, Initializable, FeedforwardSequence,
 from blocks.bricks.conv import (
     ConvolutionalLayer, ConvolutionalSequence, Flattener)
 from blocks.bricks.cost import CategoricalCrossEntropy, MisclassificationRate
+from blocks.extensions import FinishAfter, Timing, Printing, ProgressBar
+from blocks.extensions.monitoring import (DataStreamMonitoring,
+                                          TrainingDataMonitoring)
+from blocks.extensions.saveload import Checkpoint
 from blocks.graph import ComputationGraph
 from blocks.initialization import Constant, Uniform
 from blocks.main_loop import MainLoop
 from blocks.model import Model
 from blocks.monitoring import aggregation
-from blocks.extensions import FinishAfter, Timing, Printing, ProgressBar
-from blocks.extensions.monitoring import (DataStreamMonitoring,
-                                          TrainingDataMonitoring)
-from blocks.extensions.saveload import Checkpoint
 from blocks.utils import named_copy
 from fuel.datasets import MNIST
 from fuel.schemes import ShuffledScheme
 from fuel.streams import DataStream
-from fuel.transformers import Mapping
 
 
 class LeNet(FeedforwardSequence, Initializable):
@@ -130,10 +129,6 @@ class LeNet(FeedforwardSequence, Initializable):
         self.top_mlp.dims = [numpy.prod(conv_out_dim)] + self.top_mlp_dims
 
 
-def _normalize(data):
-    return data[0] / 255. - .5, data[1]
-
-
 def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
          conv_sizes=None, pool_sizes=None, batch_size=500):
     if feature_maps is None:
@@ -186,16 +181,15 @@ def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
     cg = ComputationGraph([cost, error_rate])
 
     mnist_train = MNIST("train")
-    mnist_train_stream = DataStream(dataset=mnist_train,
-                                    iteration_scheme=ShuffledScheme(
-                                        mnist_train.num_examples, batch_size))
-    mnist_train_stream = Mapping(mnist_train_stream, _normalize)
+    mnist_train_stream = DataStream.default_stream(
+        mnist_train, iteration_scheme=ShuffledScheme(
+            mnist_train.num_examples, batch_size))
 
     mnist_test = MNIST("test")
-    mnist_test_stream = DataStream(dataset=mnist_test,
-                                   iteration_scheme=ShuffledScheme(
-                                       mnist_test.num_examples, batch_size))
-    mnist_test_stream = Mapping(mnist_test_stream, _normalize)
+    mnist_test_stream = DataStream.default_stream(
+        mnist_test,
+        iteration_scheme=ShuffledScheme(
+            mnist_test.num_examples, batch_size))
 
     # Train with simple SGD
     algorithm = GradientDescent(

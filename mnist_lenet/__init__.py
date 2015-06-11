@@ -241,7 +241,8 @@ if __name__ == "__main__":
                         "always square.")
     parser.add_argument("--pool-sizes", type=int, nargs='+', default=[2, 2],
                         help="Pooling sizes. The pooling windows are always "
-                             "square.")
+                             "square. Should be the same length as "
+                             "--conv-sizes.")
     parser.add_argument("--batch_size", type=int, default=500,
                         help="Batch size.")
     args = parser.parse_args()

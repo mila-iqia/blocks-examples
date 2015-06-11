@@ -24,7 +24,7 @@ from blocks.graph import ComputationGraph
 from fuel.transformers import Mapping, Batch, Padding, Filter
 from fuel.datasets import OneBillionWord, TextFile
 from fuel.schemes import ConstantScheme
-from blocks.dump import load_parameter_values
+from blocks.serialization import load_parameter_values
 from blocks.algorithms import (GradientDescent, Scale,
                                StepClipping, CompositeRule)
 from blocks.initialization import Orthogonal, IsotropicGaussian, Constant
@@ -33,7 +33,6 @@ from blocks.monitoring import aggregation
 from blocks.extensions import FinishAfter, Printing, Timing
 from blocks.extensions.saveload import Checkpoint
 from blocks.extensions.monitoring import TrainingDataMonitoring
-from blocks.extensions.plot import Plot
 from blocks.main_loop import MainLoop
 from blocks.filter import VariableFilter
 from blocks.utils import named_copy, dict_union
@@ -242,10 +241,6 @@ def main(mode, save_path, num_batches, data_path=None):
                 # This shows a way to handle NaN emerging during
                 # training: simply finish it.
                 .add_condition("after_batch", _is_nan),
-                Plot(os.path.basename(save_path),
-                     [[average_monitoring.record_name(cost)],
-                      [average_monitoring.record_name(cost_per_character)]],
-                     every_n_batches=10),
                 # Saving the model and the log separately is convenient,
                 # because loading the whole pickle takes quite some time.
                 Checkpoint(save_path, every_n_batches=500,

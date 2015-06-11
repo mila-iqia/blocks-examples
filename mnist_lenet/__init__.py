@@ -32,6 +32,7 @@ from blocks.utils import named_copy
 from fuel.datasets import MNIST
 from fuel.schemes import ShuffledScheme
 from fuel.streams import DataStream
+from fuel.transformers import Mapping
 
 
 class LeNet(FeedforwardSequence, Initializable):
@@ -129,6 +130,10 @@ class LeNet(FeedforwardSequence, Initializable):
         self.top_mlp.dims = [numpy.prod(conv_out_dim)] + self.top_mlp_dims
 
 
+def _normalize(data):
+    return data[0] / 255. - .5, data[1]
+
+
 def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
          conv_sizes=None, pool_sizes=None, batch_size=500):
     if feature_maps is None:
@@ -172,28 +177,29 @@ def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
     y = tensor.lmatrix('targets')
 
     # Normalize input and apply the convnet
-    probs = convnet.apply((x / 256.) - 0.5)
+    probs = convnet.apply(x)
     cost = named_copy(CategoricalCrossEntropy().apply(y.flatten(),
                       probs), 'cost')
     error_rate = named_copy(MisclassificationRate().apply(y.flatten(), probs),
                             'error_rate')
 
     cg = ComputationGraph([cost, error_rate])
-    cg_train = cg
-    train_cost, train_error_rate = cg_train.outputs
 
     mnist_train = MNIST("train")
     mnist_train_stream = DataStream(dataset=mnist_train,
                                     iteration_scheme=ShuffledScheme(
                                         mnist_train.num_examples, batch_size))
+    mnist_train_stream = Mapping(mnist_train_stream, _normalize)
+
     mnist_test = MNIST("test")
     mnist_test_stream = DataStream(dataset=mnist_test,
                                    iteration_scheme=ShuffledScheme(
                                        mnist_test.num_examples, batch_size))
+    mnist_test_stream = Mapping(mnist_test_stream, _normalize)
 
     # Train with simple SGD
     algorithm = GradientDescent(
-        cost=train_cost, params=cg_train.parameters,
+        cost=cost, params=cg.parameters,
         step_rule=Scale(learning_rate=0.1))
     # `Timing` extension reports time for reading data, aggregating a batch
     # and monitoring;
@@ -205,7 +211,7 @@ def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
                       mnist_test_stream,
                       prefix="test"),
                   TrainingDataMonitoring(
-                      [train_cost, train_error_rate,
+                      [cost, error_rate,
                        aggregation.mean(algorithm.total_gradient_norm)],
                       prefix="train",
                       after_epoch=True),

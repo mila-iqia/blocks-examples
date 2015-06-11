@@ -21,7 +21,6 @@ from blocks.extensions import FinishAfter, Timing, Printing
 from blocks.extensions.saveload import Checkpoint
 from blocks.extensions.monitoring import (DataStreamMonitoring,
                                           TrainingDataMonitoring)
-from blocks.extensions.plot import Plot
 from blocks.main_loop import MainLoop
 from blocks.utils import named_copy
 
@@ -121,8 +120,8 @@ class LeNet(FeedforwardSequence, Initializable):
         self.top_mlp.dims = [numpy.prod(conv_out_dim)] + self.top_mlp_dims
 
 
-def main(save_to, num_epochs, bokeh=False, feature_maps=None,
-         mlp_hiddens=None, conv_sizes=None, pool_sizes=None):
+def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
+         conv_sizes=None, pool_sizes=None):
     if feature_maps is None:
         feature_maps = [6, 16]
     if mlp_hiddens is None:
@@ -189,13 +188,6 @@ def main(save_to, num_epochs, bokeh=False, feature_maps=None,
                   Checkpoint(save_to),
                   Printing()]
 
-    if bokeh:
-        extensions.append(Plot(
-            'MNIST LeNet example',
-            channels=[
-                ['test_final_cost',
-                 'test_misclassificationrate_apply_error_rate'],
-                ['train_total_gradient_norm']]))
     model = Model(cost)
 
     main_loop = MainLoop(
@@ -215,8 +207,6 @@ if __name__ == "__main__":
     parser.add_argument("save_to", default="mnist.pkl", nargs="?",
                         help=("Destination to save the state of the training "
                               "process."))
-    parser.add_argument("--bokeh", action='store_true',
-                        help="Set if you want to use Bokeh ")
     parser.add_argument("--feature-maps", type=int, default=None)
     parser.add_argument("--mlp-hiddens", type=int, default=None)
     parser.add_argument("--conv-sizes", type=int, default=None)

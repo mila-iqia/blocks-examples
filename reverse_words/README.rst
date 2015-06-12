@@ -54,7 +54,7 @@ Each batch of sentences has ``Padding`` applied
 that pads it out to the same length and simultaneously creates ``features_mask`` 
 and ``targets_mask`` overlays that identify which of the data stream's output cells 
 are filled with valid data.  We know that the sentences in each ``Batch`` are 
-less that 100 characters long, however the ``Padding`` only exapands the 
+less that 100 characters long, however the ``Padding`` only expands the 
 underlying data to be the size of the longest entry.
 
 
@@ -91,21 +91,27 @@ an output sequence :
   (http://blocks.readthedocs.org/en/latest/api/bricks.html?highlight=sequencecontentattention#blocks.bricks.attention.SequenceContentAttention)
 * the final output of the ``SequenceGenerator`` is read via a ``SoftmaxEmitter`` and converted to characters 
 * and it feeds this result back to the ``transition`` recurrent level 
-  via a `LookupFeedback`
+  via a ``LookupFeedback``
 
 
 
 Structure of the Training
 --------------------------
 
-The training algorithm uses ``GradientDescent`` with a maximum 
-step-size (``StepClipping(10.0)``) applied to 
+The training algorithm uses ``GradientDescent`` to create 
+steps in the direction that reduces 
 the mean over 
 the batch of 
 the sums of 
 the log-likelihood costs associated with 
 errors on the character outputs for 
 each sentence.
+
+The step-size is moderated first by ``StepClipping(10.0)``, 
+which clips the gradient to have the norm of at most 10.0,
+and then it has ``Scale(0.01)`` applied, 
+which further scales down the clipped gradient.
+
 
 
 Structure of the Testing

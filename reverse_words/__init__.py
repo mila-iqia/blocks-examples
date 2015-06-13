@@ -138,8 +138,8 @@ class WordReverser(Initializable):
         return self.generator.generate(
             n_steps=3 * chars.shape[0], batch_size=chars.shape[1],
             attended=self.encoder.apply(
-                **dict_union(self.fork.apply(self.lookup.apply(chars),
-                             as_dict=True))),
+                **dict_union(
+                    self.fork.apply(self.lookup.apply(chars), as_dict=True))),
             attended_mask=tensor.ones(chars.shape))
 
 

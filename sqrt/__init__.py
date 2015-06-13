@@ -1,5 +1,3 @@
-import logging
-import math
 import numpy
 
 import theano
@@ -12,8 +10,8 @@ from blocks.graph import ComputationGraph
 from blocks.initialization import IsotropicGaussian, Constant
 from blocks.model import Model
 from fuel.datasets import IterableDataset
-from fuel.transformers import Batch, Mapping
 from fuel.schemes import ConstantScheme
+from fuel.transfomers import Batch
 from blocks.extensions import FinishAfter, Timing, Printing
 from blocks.extensions.saveload import Checkpoint
 from blocks.extensions.monitoring import (TrainingDataMonitoring,
@@ -23,26 +21,15 @@ from blocks.main_loop import MainLoop
 floatX = theano.config.floatX
 
 
-def _data_sqrt(data):
-    """Produces the target values for learning"""
-    return (math.sqrt(data[0]),)
-
-
-def _array_tuple(data):
-    """Utility function to 'numpy'-ize the stream appropriately"""
-    return tuple((numpy.asarray(d, dtype=floatX) for d in data))
-
-
 def get_data_stream(iterable):
     """Returns a 'fuel.Batch' datastream of
     [x~input~numbers, y~targets~roots], with each iteration returning a
     batch of 20 training examples
     """
-    dataset = IterableDataset({'numbers': iterable})
-    data_stream = Mapping(dataset.get_example_stream(),
-                          _data_sqrt, add_sources=('roots',))
-    data_stream = Mapping(data_stream, _array_tuple)
-    return Batch(data_stream, ConstantScheme(20))
+    numbers = numpy.asarray(iterable, dtype=floatX)
+    dataset = IterableDataset(
+        {'numbers': numbers, 'roots': numpy.sqrt(numbers)})
+    return Batch(dataset.get_example_stream(), ConstantScheme(20))
 
 
 def main(save_to, num_batches):

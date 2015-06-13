@@ -9,7 +9,7 @@ which you should download and put to the path indicated in your .fuelrc file.
 """
 import logging
 import argparse
-from . import main
+from reverse_words import main
 
 if __name__ == "__main__":
     logging.basicConfig(

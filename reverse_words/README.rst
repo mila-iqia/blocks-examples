@@ -45,6 +45,9 @@ data :
 * ``_transpose`` is a convenience function to re-orient the matrices finally coming out of the data stream
 * ``_is_nan`` is a termination function for training - not data processing
 
+These functions live at the top level of the module, so that the model
+can be cleanly pickled and unpickled.
+
 Once the data is read in character-wise (``level="character"``), it
 is cleaned up and converted into mini-batches using ``Batch`` with 
 ``iteration_scheme=ConstantScheme(10)``, which means that it works on 10 

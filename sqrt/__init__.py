@@ -1,13 +1,6 @@
-#!/usr/bin/env python
-"""Super-basic example, mainly for testing purposes.
-
-This script trains a tiny network to compute square root.
-
-"""
 import logging
 import math
 import numpy
-from argparse import ArgumentParser
 
 import theano
 from theano import tensor
@@ -26,20 +19,25 @@ from blocks.extensions.saveload import Checkpoint
 from blocks.extensions.monitoring import (TrainingDataMonitoring,
                                           DataStreamMonitoring)
 from blocks.main_loop import MainLoop
-from blocks.serialization import continue_training
 
 floatX = theano.config.floatX
 
 
 def _data_sqrt(data):
+    """Produces the target values for learning"""
     return (math.sqrt(data[0]),)
 
 
 def _array_tuple(data):
+    """Utility function to 'numpy'-ize the stream appropriately"""
     return tuple((numpy.asarray(d, dtype=floatX) for d in data))
 
 
 def get_data_stream(iterable):
+    """Returns a 'fuel.Batch' datastream of 
+    [x~input~numbers, y~targets~roots], with each iteration returning a 
+    batch of 20 training examples
+    """    
     dataset = IterableDataset({'numbers': iterable})
     data_stream = Mapping(dataset.get_example_stream(),
                           _data_sqrt, add_sources=('roots',))
@@ -75,13 +73,3 @@ def main(save_to, num_batches):
     main_loop.run()
     return main_loop
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    parser = ArgumentParser("An example of learning to take square root")
-    parser.add_argument("--num-batches", type=int, default=1000,
-                        help="Number of training batches to do.")
-    parser.add_argument("save_to", default="sqrt", nargs="?",
-                        help=("Destination to save the state of the training "
-                              "process."))
-    args = parser.parse_args()
-    main(**vars(args))

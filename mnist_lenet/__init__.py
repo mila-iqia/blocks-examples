@@ -180,12 +180,12 @@ def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
 
     cg = ComputationGraph([cost, error_rate])
 
-    mnist_train = MNIST("train")
+    mnist_train = MNIST(("train",))
     mnist_train_stream = DataStream.default_stream(
         mnist_train, iteration_scheme=ShuffledScheme(
             mnist_train.num_examples, batch_size))
 
-    mnist_test = MNIST("test")
+    mnist_test = MNIST(("test",))
     mnist_test_stream = DataStream.default_stream(
         mnist_test,
         iteration_scheme=ShuffledScheme(

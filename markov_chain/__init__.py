@@ -66,7 +66,7 @@ def main(mode, save_path, steps, num_batches):
         logger.info("Parameters:\n" +
                     pprint.pformat(
                         [(key, value.get_value().shape) for key, value
-                         in Selector(generator).get_params().items()],
+                         in Selector(generator).get_parameters().items()],
                         width=120))
         logger.info("Markov chain entropy: {}".format(
             MarkovChainDataset.entropy))
@@ -80,7 +80,8 @@ def main(mode, save_path, steps, num_batches):
         cost.name = "sequence_log_likelihood"
 
         algorithm = GradientDescent(
-            cost=cost, params=list(Selector(generator).get_params().values()),
+            cost=cost,
+            parameters=list(Selector(generator).get_parameters().values()),
             step_rule=Scale(0.001))
         main_loop = MainLoop(
             algorithm=algorithm,

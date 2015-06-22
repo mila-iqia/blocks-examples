@@ -25,7 +25,7 @@ if __name__ == "__main__":
              " In the `sample` and `beam_search` modes a trained model is "
              " to used reverse words in the input text.")
     parser.add_argument(
-        "save_path", default="chain", nargs='?',
+        "save_path", default="reverse_words", nargs='?',
         help="The path to save the training process if the mode"
              " is `train` OR path to an `.npz` files with learned"
              " parameters if the mode is `test`.")

@@ -183,7 +183,7 @@ def main(mode, save_path, num_batches, data_path=None):
 
         # Give an idea of what's going on
         model = Model(cost)
-        parameters = model.get_parameters()
+        parameters = model.get_parameter_dict()
         logger.info("Parameters:\n" +
                     pprint.pformat(
                         [(key, value.get_value().shape) for key, value

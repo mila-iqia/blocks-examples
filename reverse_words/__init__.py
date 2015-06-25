@@ -240,7 +240,7 @@ def main(mode, save_path, num_batches, data_path=None):
                 FinishAfter(after_n_batches=num_batches)
                 # This shows a way to handle NaN emerging during
                 # training: simply finish it.
-                .add_condition("after_batch", _is_nan),
+                .add_condition(["after_batch"], _is_nan),
                 # Saving the model and the log separately is convenient,
                 # because loading the whole pickle takes quite some time.
                 Checkpoint(save_path, every_n_batches=500,

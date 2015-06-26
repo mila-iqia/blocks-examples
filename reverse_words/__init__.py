@@ -277,7 +277,7 @@ def main(mode, save_path, num_batches, data_path=None):
                 # every time user presses Enter. Do not create
                 # a new `BeamSearch` object every time if
                 # speed is important for you.
-                beam_search = BeamSearch(input_.shape[1], samples)
+                beam_search = BeamSearch(samples)
                 outputs, costs = beam_search.search(
                     {chars: input_}, char2code['</S>'],
                     3 * input_.shape[0])

@@ -7,7 +7,7 @@ from mnist import main
 
 def test_mnist():
     with tempfile.NamedTemporaryFile() as f:
-        main(f.name, 1, True)
+        main(f.name, 1)
         with open(f.name, "rb") as source:
             main_loop = load(source)
         main_loop.find_extension("FinishAfter").set_conditions(

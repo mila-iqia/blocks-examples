@@ -24,7 +24,7 @@ from blocks.extensions.monitoring import (DataStreamMonitoring,
 from blocks.main_loop import MainLoop
 
 
-def main(save_to, num_epochs, bokeh=False):
+def main(save_to, num_epochs):
     mlp = MLP([Tanh(), Softmax()], [784, 100, 10],
               weights_init=IsotropicGaussian(0.01),
               biases_init=Constant(0))
@@ -87,7 +87,5 @@ if __name__ == "__main__":
     parser.add_argument("save_to", default="mnist.pkl", nargs="?",
                         help=("Destination to save the state of the training "
                               "process."))
-    parser.add_argument("--bokeh", action='store_true',
-                        help="Set if you want to use Bokeh ")
     args = parser.parse_args()
-    main(args.save_to, args.num_epochs, args.bokeh)
+    main(args.save_to, args.num_epochs)

@@ -7,15 +7,9 @@ import signal
 import time
 
 from blocks.extensions import SimpleExtension
-from blocks.filter import VariableFilter
-from blocks.roles import OUTPUT
 from blocks.search import BeamSearch
 
-from collections import OrderedDict
-from picklable_itertools.extras import equizip
 from subprocess import Popen, PIPE
-
-from theano import function, tensor
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +122,7 @@ class Sampler(SimpleExtension, SamplingBase):
 
 
 class BleuValidator(SimpleExtension, SamplingBase):
+    # TODO: a lot has been changed in NMT, sync respectively
     """Implements early stopping based on BLEU score."""
 
     def __init__(self, source_sentence, samples, model, data_stream,

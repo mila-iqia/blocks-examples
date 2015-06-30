@@ -14,7 +14,7 @@ def get_config_cs2en():
     config['enc_embed'] = 62
     config['dec_embed'] = 62
 
-    # Where to save model
+    # Where to save model, this corresponds to 'prefix' in groundhog
     config['saveto'] = 'search_model_cs2en'
 
     # Optimization related ----------------------------------------------------
@@ -89,12 +89,15 @@ def get_config_cs2en():
     config['output_val_set'] = True
 
     # Validation output file
-    config['val_set_out'] = config['saveto'] + '/adadelta_40k_out.txt'
+    config['val_set_out'] = config['saveto'] + '_validation_out.txt'
 
     # Beam-size
     config['beam_size'] = 20
 
     # Timing/monitoring related -----------------------------------------------
+
+    # Maximum number of updates
+    config['finish_after'] = 1000000
 
     # Reload model from files if exist
     config['reload'] = False

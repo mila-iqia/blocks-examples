@@ -17,7 +17,7 @@ from blocks.bricks.sequence_generators import (
     LookupFeedback, Readout, SoftmaxEmitter,
     SequenceGenerator)
 from blocks.extensions.saveload import Checkpoint, Load
-from blocks.extensions import Printing
+from blocks.extensions import FinishAfter, Printing
 from blocks.extensions.monitoring import TrainingDataMonitoring
 from blocks.extensions.plot import Plot
 from blocks.filter import VariableFilter
@@ -313,10 +313,11 @@ def main(config, tr_stream, dev_stream, bokeh=False):
     # Set extensions
     logger.info("Initializing extensions")
     extensions = [
+        FinishAfter(after_n_batches=config['finish_after']),
         TrainingDataMonitoring([cost], after_batch=True),
         Printing(after_batch=True),
         Checkpoint(config['saveto'],
-                   save_separately=['log', 'params', 'iteration_state'],
+                   save_separately=['log', 'model', 'iteration_state'],
                    every_n_batches=config['save_freq'])
     ]
 

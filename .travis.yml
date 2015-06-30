@@ -32,4 +32,5 @@ install:
 script:
   - export THEANO_FLAGS=floatX=$FLOATX,optimizer=fast_compile
   - export FUEL_FLOATX=$FLOATX
+  - bokeh-server
   - nose2 tests

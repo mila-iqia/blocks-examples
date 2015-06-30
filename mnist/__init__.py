@@ -44,7 +44,7 @@ def main(save_to, num_epochs, bokeh=False):
     mnist_test = MNIST(("test",))
 
     algorithm = GradientDescent(
-        cost=cost, params=cg.parameters,
+        cost=cost, parameters=cg.parameters,
         step_rule=Scale(learning_rate=0.1))
     extensions = [Timing(),
                   FinishAfter(after_n_epochs=num_epochs),

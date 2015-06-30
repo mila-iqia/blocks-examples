@@ -177,17 +177,17 @@ def main(mode, save_path, num_batches, data_path=None):
         batch_cost = reverser.cost(
             chars, chars_mask, targets, targets_mask).sum()
         batch_size = named_copy(chars.shape[1], "batch_size")
-        cost = aggregation.mean(batch_cost,  batch_size)
+        cost = aggregation.mean(batch_cost, batch_size)
         cost.name = "sequence_log_likelihood"
         logger.info("Cost graph is built")
 
         # Give an idea of what's going on
         model = Model(cost)
-        params = model.get_params()
+        parameters = model.get_parameter_dict()
         logger.info("Parameters:\n" +
                     pprint.pformat(
                         [(key, value.get_value().shape) for key, value
-                         in params.items()],
+                         in parameters.items()],
                         width=120))
 
         # Initialize parameters
@@ -197,7 +197,7 @@ def main(mode, save_path, num_batches, data_path=None):
         # Define the training algorithm.
         cg = ComputationGraph(cost)
         algorithm = GradientDescent(
-            cost=cost, params=cg.parameters,
+            cost=cost, parameters=cg.parameters,
             step_rule=CompositeRule([StepClipping(10.0), Scale(0.01)]))
 
         # Fetch variables useful for debugging
@@ -220,11 +220,11 @@ def main(mode, save_path, num_batches, data_path=None):
             cost, min_energy, max_energy, mean_activation,
             batch_size, max_length, cost_per_character,
             algorithm.total_step_norm, algorithm.total_gradient_norm]
-        for name, param in params.items():
+        for name, parameter in parameters.items():
             observables.append(named_copy(
-                param.norm(2), name + "_norm"))
+                parameter.norm(2), name + "_norm"))
             observables.append(named_copy(
-                algorithm.gradients[param].norm(2), name + "_grad_norm"))
+                algorithm.gradients[parameter].norm(2), name + "_grad_norm"))
 
         # Construct the main loop and start training!
         average_monitoring = TrainingDataMonitoring(
@@ -252,7 +252,7 @@ def main(mode, save_path, num_batches, data_path=None):
         generated = reverser.generate(chars)
         model = Model(generated)
         logger.info("Loading the model..")
-        model.set_param_values(load_parameter_values(save_path))
+        model.set_parameter_values(load_parameter_values(save_path))
 
         def generate(input_):
             """Generate output sequences for an input sequence.

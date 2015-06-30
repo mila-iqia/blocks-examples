@@ -28,6 +28,7 @@ install:
   - pip install -q git+git://github.com/bartvm/blocks.git -r https://raw.githubusercontent.com/bartvm/blocks/master/requirements.txt
   - pip install -q git+git://github.com/mila-udem/blocks-extras.git 
   - conda install -q --yes bokeh
+  - conda install -q --yes pandas
   - curl https://raw.githubusercontent.com/bartvm/fuel/download_travis/.travis-data.sh | bash -s -- mnist
 script:
   - export THEANO_FLAGS=floatX=$FLOATX,optimizer=fast_compile

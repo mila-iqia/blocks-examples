@@ -100,13 +100,11 @@ class BidirectionalEncoder(Initializable):
         self.lookup.dim = self.embedding_dim
 
         self.fwd_fork.input_dim = self.embedding_dim
-        self.fwd_fork.output_dims = [
-            self.state_dim * 2 if name == 'gate_inputs' else self.state_dim
-            for name in self.fwd_fork.output_names]
+        self.fwd_fork.output_dims = [self.bidir.children[0].get_dim(name)
+                                     for name in self.fwd_fork.output_names]
         self.back_fork.input_dim = self.embedding_dim
-        self.back_fork.output_dims = [
-            self.state_dim * 2 if name == 'gate_inputs' else self.state_dim
-            for name in self.back_fork.output_names]
+        self.back_fork.output_dims = [self.bidir.children[1].get_dim(name)
+                                      for name in self.back_fork.output_names]
 
     @application(inputs=['source_sentence', 'source_sentence_mask'],
                  outputs=['representation'])

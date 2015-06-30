@@ -16,12 +16,12 @@ nmt#data-preparation
 """
 
 import argparse
+import importlib
 import logging
 import pprint
 
 import config
-import stream
-from examples.machine_translation import main
+from machine_translation import main
 
 logger = logging.getLogger(__name__)
 
@@ -31,18 +31,11 @@ parser.add_argument("--proto",  default="get_config_cs2en",
                     help="Prototype config to use for config")
 args = parser.parse_args()
 
-# Make config global, nasty workaround since parameterizing stream
-# will cause erroneous picklable behaviour
-# TODO: find a beter solution
+# Get configurations for model
 config = getattr(config, args.proto)()
-
-
-# dictionary mapping stream name to stream getters
-streams = {'cs-en': stream}
 
 
 if __name__ == "__main__":
     logger.info("Model options:\n{}".format(pprint.pformat(config)))
-    tr_stream, dev_stream = [streams[config['stream']].masked_stream,
-                             streams[config['stream']].dev_stream]
-    main(config, tr_stream, dev_stream)
+    data_stream = importlib.import_module(config['stream'])
+    main(config, data_stream.masked_stream, data_stream.dev_stream)

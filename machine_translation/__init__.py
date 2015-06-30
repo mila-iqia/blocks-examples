@@ -33,45 +33,6 @@ from sampling import BleuValidator, Sampler
 
 logger = logging.getLogger(__name__)
 
-'''
-class MainLoopDumpManagerWMT15(MainLoopDumpManager):
-
-    def load_to(self, main_loop):
-        """Loads the dump from the root folder into the main loop.
-
-        Only difference from super().load_to is the exception handling
-        for each step separately.
-        """
-        try:
-            logger.info("Loading model parameters...")
-            params = self.load_parameters()
-            main_loop.model.set_param_values(params)
-            for p, v in params.iteritems():
-                logger.info("Loaded {:15}: {}".format(v.shape, p))
-            logger.info("Number of parameters loaded: {}".format(len(params)))
-        except Exception as e:
-            logger.error("Error {0}".format(str(e)))
-
-        try:
-            logger.info("Loading iteration state...")
-            main_loop.iteration_state = self.load_iteration_state()
-        except Exception as e:
-            logger.error("Error {0}".format(str(e)))
-
-        try:
-            logger.info("Loading log...")
-            main_loop.log = self.load_log()
-        except Exception as e:
-            logger.error("Error {0}".format(str(e)))
-
-
-class LoadFromDumpWMT15(LoadFromDump):
-    """Wrapper to use MainLoopDumpManagerWMT15"""
-
-    def __init__(self, config_path, **kwargs):
-        super(LoadFromDumpWMT15, self).__init__(config_path, **kwargs)
-        self.manager = MainLoopDumpManagerWMT15(config_path)
-'''
 
 # Helper class
 class InitializableFeedforwardSequence(FeedforwardSequence, Initializable):
@@ -140,10 +101,12 @@ class BidirectionalEncoder(Initializable):
 
         self.fwd_fork.input_dim = self.embedding_dim
         self.fwd_fork.output_dims = [
-            self.state_dim for _ in self.fwd_fork.output_names]
+            self.state_dim * 2 if name == 'gate_inputs' else self.state_dim
+            for name in self.fwd_fork.output_names]
         self.back_fork.input_dim = self.embedding_dim
         self.back_fork.output_dims = [
-            self.state_dim for _ in self.back_fork.output_names]
+            self.state_dim * 2 if name == 'gate_inputs' else self.state_dim
+            for name in self.back_fork.output_names]
 
     @application(inputs=['source_sentence', 'source_sentence_mask'],
                  outputs=['representation'])
@@ -345,16 +308,6 @@ def main(config, tr_stream, dev_stream, bokeh=False):
     logger.info("Total number of parameters: {}"
                 .format(len(enc_dec_param_dict)))
 
-    # Set up beam search and sampling computation graphs
-    logger.info("Building sampler")
-    sampling_representation = encoder.apply(
-        sampling_input, tensor.ones(sampling_input.shape))
-    generated = decoder.generate(sampling_input, sampling_representation)
-    search_model = Model(generated)
-    _, samples = VariableFilter(
-        bricks=[decoder.sequence_generator], name="outputs")(
-            ComputationGraph(generated[1]))  # generated[1] is the next_outputs
-
     # Set up training model
     logger.info("Building model")
     training_model = Model(cost)
@@ -362,17 +315,37 @@ def main(config, tr_stream, dev_stream, bokeh=False):
     # Set extensions
     logger.info("Initializing extensions")
     extensions = [
-        Sampler(model=search_model, config=config, data_stream=tr_stream,
-                every_n_batches=config['sampling_freq']),
-        BleuValidator(sampling_input, samples=samples, config=config,
-                      model=search_model, data_stream=dev_stream,
-                      every_n_batches=config['bleu_val_freq']),
         TrainingDataMonitoring([cost], after_batch=True),
         Printing(after_batch=True),
         Checkpoint(config['saveto'],
                    save_separately=['log', 'params', 'iteration_state'],
                    every_n_batches=config['save_freq'])
     ]
+
+    # Set up beam search and sampling computation graphs if necessary
+    if config['hook_samples'] > 1 or config['bleu_script'] is not None:
+        logger.info("Building sampling model")
+        sampling_representation = encoder.apply(
+            sampling_input, tensor.ones(sampling_input.shape))
+        generated = decoder.generate(sampling_input, sampling_representation)
+        search_model = Model(generated)
+        _, samples = VariableFilter(
+            bricks=[decoder.sequence_generator], name="outputs")(
+                ComputationGraph(generated[1]))  # generated[1] is next_outputs
+
+    # Add sampling
+    if config['hook_samples'] > 1:
+        logger.info("Building sampler")
+        extensions.append(
+            Sampler(model=search_model, config=config, data_stream=tr_stream,
+                    every_n_batches=config['sampling_freq']))
+
+    # Add early stopping based on bleu
+    if config['bleu_script'] is not None:
+        logger.info("Building bleu validator")
+        BleuValidator(sampling_input, samples=samples, config=config,
+                      model=search_model, data_stream=dev_stream,
+                      every_n_batches=config['bleu_val_freq'])
 
     # Reload model if necessary
     if config['reload']:

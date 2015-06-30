@@ -16,12 +16,10 @@ from blocks.bricks.recurrent import GatedRecurrent, Bidirectional
 from blocks.bricks.sequence_generators import (
     LookupFeedback, Readout, SoftmaxEmitter,
     SequenceGenerator)
-from blocks.dump import MainLoopDumpManager
-from blocks.extensions.saveload import LoadFromDump
+from blocks.extensions.saveload import Checkpoint, Load
 from blocks.extensions import Printing
 from blocks.extensions.monitoring import TrainingDataMonitoring
 from blocks.extensions.plot import Plot
-from blocks.extensions.saveload import Dump
 from blocks.filter import VariableFilter
 from blocks.graph import ComputationGraph, apply_noise, apply_dropout
 from blocks.initialization import IsotropicGaussian, Orthogonal, Constant
@@ -35,7 +33,7 @@ from sampling import BleuValidator, Sampler
 
 logger = logging.getLogger(__name__)
 
-
+'''
 class MainLoopDumpManagerWMT15(MainLoopDumpManager):
 
     def load_to(self, main_loop):
@@ -73,7 +71,7 @@ class LoadFromDumpWMT15(LoadFromDump):
     def __init__(self, config_path, **kwargs):
         super(LoadFromDumpWMT15, self).__init__(config_path, **kwargs)
         self.manager = MainLoopDumpManagerWMT15(config_path)
-
+'''
 
 # Helper class
 class InitializableFeedforwardSequence(FeedforwardSequence, Initializable):
@@ -274,9 +272,10 @@ class Decoder(Initializable):
             glimpses=self.attention.take_glimpses.outputs[0])
 
 
-def main(config, tr_stream, dev_stream):
+def main(config, tr_stream, dev_stream, bokeh=False):
 
     # Create Theano variables
+    logger.info('Creating theano variables')
     source_sentence = tensor.lmatrix('source')
     source_sentence_mask = tensor.matrix('source_mask')
     target_sentence = tensor.lmatrix('target')
@@ -284,6 +283,7 @@ def main(config, tr_stream, dev_stream):
     sampling_input = tensor.lmatrix('input')
 
     # Construct model
+    logger.info('Building RNN encoder-decoder')
     encoder = BidirectionalEncoder(
         config['src_vocab_size'], config['enc_embed'], config['enc_nhids'])
     decoder = Decoder(
@@ -293,9 +293,11 @@ def main(config, tr_stream, dev_stream):
         encoder.apply(source_sentence, source_sentence_mask),
         source_sentence_mask, target_sentence, target_sentence_mask)
 
+    logger.info('Creating computational graph')
     cg = ComputationGraph(cost)
 
     # Initialize model
+    logger.info('Initializing model')
     encoder.weights_init = decoder.weights_init = IsotropicGaussian(
         config['weight_scale'])
     encoder.biases_init = decoder.biases_init = Constant(0)
@@ -306,17 +308,17 @@ def main(config, tr_stream, dev_stream):
     encoder.initialize()
     decoder.initialize()
 
-    cg = ComputationGraph(cost)
-
     # apply dropout for regularization
     if config['dropout'] < 1.0:
         # dropout is applied to the output of maxout in ghog
+        logger.info('Applying dropout')
         dropout_inputs = [x for x in cg.intermediary_variables
                           if x.name == 'maxout_apply_output']
         cg = apply_dropout(cg, dropout_inputs, config['dropout'])
 
     # Apply weight noise for regularization
     if config['weight_noise_ff'] > 0.0:
+        logger.info('Applying weight noise to ff layers')
         enc_params = Selector(encoder.lookup).get_params().values()
         enc_params += Selector(encoder.fwd_fork).get_params().values()
         enc_params += Selector(encoder.back_fork).get_params().values()
@@ -335,34 +337,30 @@ def main(config, tr_stream, dev_stream):
     logger.info("Total number of parameters: {}".format(len(shapes)))
 
     # Print parameter names
-    enc_dec_param_dict = merge(Selector(encoder).get_params(),
-                               Selector(decoder).get_params())
+    enc_dec_param_dict = merge(Selector(encoder).get_parameters(),
+                               Selector(decoder).get_parameters())
     logger.info("Parameter names: ")
     for name, value in enc_dec_param_dict.iteritems():
         logger.info('    {:15}: {}'.format(value.get_value().shape, name))
     logger.info("Total number of parameters: {}"
                 .format(len(enc_dec_param_dict)))
 
-    # Set up training algorithm
-    algorithm = GradientDescent(
-        cost=cost, params=cg.parameters,
-        step_rule=CompositeRule([StepClipping(config['step_clipping']),
-                                 eval(config['step_rule'])()])
-    )
-
     # Set up beam search and sampling computation graphs
+    logger.info("Building sampler")
     sampling_representation = encoder.apply(
         sampling_input, tensor.ones(sampling_input.shape))
     generated = decoder.generate(sampling_input, sampling_representation)
     search_model = Model(generated)
-    samples, = VariableFilter(
+    _, samples = VariableFilter(
         bricks=[decoder.sequence_generator], name="outputs")(
             ComputationGraph(generated[1]))  # generated[1] is the next_outputs
 
     # Set up training model
+    logger.info("Building model")
     training_model = Model(cost)
 
     # Set extensions
+    logger.info("Initializing extensions")
     extensions = [
         Sampler(model=search_model, config=config, data_stream=tr_stream,
                 every_n_batches=config['sampling_freq']),
@@ -370,17 +368,32 @@ def main(config, tr_stream, dev_stream):
                       model=search_model, data_stream=dev_stream,
                       every_n_batches=config['bleu_val_freq']),
         TrainingDataMonitoring([cost], after_batch=True),
-        Plot('En-Fr', channels=[['decoder_cost_cost']],
-             after_batch=True),
         Printing(after_batch=True),
-        Dump(config['saveto'], every_n_batches=config['save_freq'])
+        Checkpoint(config['saveto'],
+                   save_separately=['log', 'params', 'iteration_state'],
+                   every_n_batches=config['save_freq'])
     ]
 
     # Reload model if necessary
     if config['reload']:
-        extensions += [LoadFromDumpWMT15(config['saveto'])]
+        extensions.append(Load(config['saveto']))
+
+    # Plot cost in bokeh if necessary
+    if bokeh:
+        extensions.append(
+            Plot('Cs-En', channels=[['decoder_cost_cost']],
+                 after_batch=True))
+
+    # Set up training algorithm
+    logger.info("Initializing training algorithm")
+    algorithm = GradientDescent(
+        cost=cost, parameters=cg.parameters,
+        step_rule=CompositeRule([StepClipping(config['step_clipping']),
+                                 eval(config['step_rule'])()])
+    )
 
     # Initialize main loop
+    logger.info("Initializing main loop")
     main_loop = MainLoop(
         model=training_model,
         algorithm=algorithm,

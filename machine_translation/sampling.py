@@ -20,37 +20,6 @@ from theano import function, tensor
 logger = logging.getLogger(__name__)
 
 
-class BeamSearchWMT15(BeamSearch):
-    """Extend BeamSearch for https://github.com/kyunghyuncho/NMT/issues/19"""
-
-    def __init__(self, prev_word, beam_size, samples):
-        super(BeamSearchWMT15, self).__init__(beam_size, samples)
-        self.prev_word = prev_word
-
-    def _compile_logprobs_computer(self):
-        """Overrides BeamSearch._compile_logprobs_computer."""
-        probs = VariableFilter(
-            applications=[self.generator.readout.emitter.probs],
-            roles=[OUTPUT])(self.inner_cg)[0]
-        logprobs = -tensor.log(probs)
-        self.logprobs_computer = function(
-            self.contexts + self.input_states + [self.prev_word], logprobs,
-            on_unused_input='ignore')
-
-    def compute_logprobs(self, contexts, states, outputs):
-        """Overrides BeamSearch.compute_logprobs."""
-        input_states = [states[name] for name in self.input_state_names]
-        return self.logprobs_computer(*(list(contexts.values()) +
-                                      input_states + [outputs.reshape(-1, 1)]))
-
-    def compute_next_states(self, contexts, states, outputs):
-        """Overrides BeamSearch.compute_next_states."""
-        input_states = [states[name] for name in self.input_state_names]
-        next_values = self.next_state_computer(*(list(contexts.values()) +
-                                                 input_states + [outputs]))
-        return OrderedDict(equizip(self.state_names, next_values))
-
-
 class SamplingBase(object):
     """Utility class for BleuValidator and Sampler."""
 
@@ -164,6 +133,7 @@ class BleuValidator(SimpleExtension, SamplingBase):
     def __init__(self, source_sentence, samples, model, data_stream,
                  config, n_best=1, track_n_models=1, trg_ivocab=None,
                  **kwargs):
+        # TODO: change config structure
         super(BleuValidator, self).__init__(**kwargs)
         self.source_sentence = source_sentence
         self.samples = samples
@@ -183,9 +153,7 @@ class BleuValidator(SimpleExtension, SamplingBase):
         self.eos_idx = self.vocab[self.eos_sym]
         self.best_models = []
         self.val_bleu_curve = []
-        self.beam_search = BeamSearchWMT15(
-            source_sentence, beam_size=self.config['beam_size'],
-            samples=samples)
+        self.beam_search = BeamSearch(samples=samples)
         self.multibleu_cmd = ['perl', self.config['bleu_script'],
                               self.config['val_set_grndtruth'], '<']
 

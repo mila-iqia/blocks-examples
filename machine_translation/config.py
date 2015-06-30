@@ -65,8 +65,11 @@ def get_config_cs2en():
     config['src_vocab_size'] = 40000
     config['trg_vocab_size'] = 40000
 
-    # Index of unknown token
+    # Special tokens and indexes
     config['unk_id'] = 1
+    config['bos_token'] = '<S>'
+    config['eos_token'] = '</S>'
+    config['unk_token'] = '<UNK>'
 
     # Early stopping based on bleu related ------------------------------------
 
@@ -77,10 +80,10 @@ def get_config_cs2en():
     config['bleu_script'] = datadir + 'multi-bleu.perl'
 
     # Validation set source file
-    config['val_set'] = datadir + 'newsdev2013.tok.cs'
+    config['val_set'] = datadir + 'newstest2013.tok.cs'
 
     # Validation set gold file
-    config['val_set_grndtruth'] = datadir + 'newsdev2013.tok.en'
+    config['val_set_grndtruth'] = datadir + 'newstest2013.tok.en'
 
     # Print validation output to file
     config['output_val_set'] = True
@@ -94,7 +97,7 @@ def get_config_cs2en():
     # Timing/monitoring related -----------------------------------------------
 
     # Reload model from files if exist
-    config['reload'] = True
+    config['reload'] = False
 
     # Save model after this many updates
     config['save_freq'] = 50

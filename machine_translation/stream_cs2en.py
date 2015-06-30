@@ -1,6 +1,3 @@
-# TODO: Remove parametrized ifilter dependency
-# TODO: Remove MappingWithArgs
-# TODO: Remove FilterWithArgs
 import cPickle
 
 from fuel.datasets import TextFile
@@ -9,7 +6,7 @@ from fuel.streams import DataStream
 from fuel.transformers import (
     Merge, Batch, Filter, Padding, SortMapping, Unpack, Mapping)
 
-from model import config
+from __main__ import config
 
 
 def _length(sentence_pair):
@@ -42,14 +39,24 @@ class _too_long(object):
                     for sentence in sentence_pair])
 
 # Get helpers
-cs_vocab = config['src_vocab']
-en_vocab = config['trg_vocab']
+cs_vocab_file = config['src_vocab']
+en_vocab_file = config['trg_vocab']
 cs_file = config['src_data']
 en_file = config['trg_data']
 
+# Load dictionaries and ensure special tokens exist
+cs_vocab = cPickle.load(open(cs_vocab_file))
+en_vocab = cPickle.load(open(en_vocab_file))
+cs_vocab[config['bos_token']] = 0
+cs_vocab[config['eos_token']] = config['src_vocab_size']
+cs_vocab[config['unk_token']] = config['unk_id']
+en_vocab[config['bos_token']] = 0
+en_vocab[config['eos_token']] = config['trg_vocab_size']
+en_vocab[config['unk_token']] = config['unk_id']
+
 # Get text files from both source and target
-cs_dataset = TextFile([cs_file], cPickle.load(open(cs_vocab)), None)
-en_dataset = TextFile([en_file], cPickle.load(open(en_vocab)), None)
+cs_dataset = TextFile([cs_file], cs_vocab, None)
+en_dataset = TextFile([en_file], en_vocab, None)
 
 # Merge them to get a source, target pair
 stream = Merge([cs_dataset.get_example_stream(),
@@ -57,8 +64,8 @@ stream = Merge([cs_dataset.get_example_stream(),
                ('source', 'target'))
 
 # Filter sequences that are too long
-stream = Filter(stream, predicate=_too_long,
-                predicate_args={'seq_len': config['seq_len']})
+stream = Filter(stream,
+                predicate=_too_long(seq_len=config['seq_len']))
 
 # Replace out of vocabulary tokens with unk token
 stream = Mapping(stream,
@@ -87,5 +94,5 @@ masked_stream = Padding(stream)
 dev_stream = None
 if 'val_set' in config and config['val_set']:
     dev_file = config['val_set']
-    dev_dataset = TextFile([dev_file], cPickle.load(open(cs_vocab)), None)
+    dev_dataset = TextFile([dev_file], cs_vocab, None)
     dev_stream = DataStream(dev_dataset)

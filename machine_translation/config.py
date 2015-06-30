@@ -77,7 +77,7 @@ def get_config_cs2en():
     config['normalized_bleu'] = True
 
     # Bleu script that will be used (moses multi-perl in this case)
-    config['bleu_script'] = datadir + 'multi-bleu.perl'
+    config['bleu_script'] = None #datadir + 'multi-bleu.perl'
 
     # Validation set source file
     config['val_set'] = datadir + 'newstest2013.tok.cs'
@@ -106,7 +106,7 @@ def get_config_cs2en():
     config['sampling_freq'] = 1
 
     # Show this many samples at each sampling
-    config['hook_samples'] = 1
+    config['hook_samples'] = 0
 
     # Validate bleu after this many updates
     config['bleu_val_freq'] = 2000

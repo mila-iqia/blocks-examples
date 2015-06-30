@@ -34,10 +34,10 @@ def _array_tuple(data):
 
 
 def get_data_stream(iterable):
-    """Returns a 'fuel.Batch' datastream of 
-    [x~input~numbers, y~targets~roots], with each iteration returning a 
+    """Returns a 'fuel.Batch' datastream of
+    [x~input~numbers, y~targets~roots], with each iteration returning a
     batch of 20 training examples
-    """    
+    """
     dataset = IterableDataset({'numbers': iterable})
     data_stream = Mapping(dataset.get_example_stream(),
                           _data_sqrt, add_sources=('roots',))
@@ -57,7 +57,7 @@ def main(save_to, num_batches):
 
     main_loop = MainLoop(
         GradientDescent(
-            cost=cost, params=ComputationGraph(cost).parameters,
+            cost=cost, parameters=ComputationGraph(cost).parameters,
             step_rule=Scale(learning_rate=0.001)),
         get_data_stream(range(100)),
         model=Model(cost),
@@ -72,4 +72,3 @@ def main(save_to, num_batches):
             Printing()])
     main_loop.run()
     return main_loop
-

@@ -97,6 +97,6 @@ if __name__ == "__main__":
                         help=("Destination to save the state of the training "
                               "process."))
     parser.add_argument("--bokeh", action='store_true',
-                        help=("Set if you want to use Bokeh for Plotting "))
+                        help="Set if you want to use Bokeh for Plotting ")
     args = parser.parse_args()
     main(args.save_to, args.num_epochs, args.bokeh)

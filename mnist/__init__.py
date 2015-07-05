@@ -21,11 +21,16 @@ from blocks.extensions import FinishAfter, Timing, Printing
 from blocks.extensions.saveload import Checkpoint
 from blocks.extensions.monitoring import (DataStreamMonitoring,
                                           TrainingDataMonitoring)
-from blocks.extras.extensions.plot import Plot
 from blocks.main_loop import MainLoop
 
+try:
+    from blocks.extras.extensions.plot import Plot
+    BLOCKS_EXTRAS_AVAILABLE = True
+except:
+    BLOCKS_EXTRAS_AVAILABLE = False
 
-def main(save_to, num_epochs, bokeh=False):
+
+def main(save_to, num_epochs):
     mlp = MLP([Tanh(), Softmax()], [784, 100, 10],
               weights_init=IsotropicGaussian(0.01),
               biases_init=Constant(0))
@@ -65,8 +70,8 @@ def main(save_to, num_epochs, bokeh=False):
                       after_epoch=True),
                   Checkpoint(save_to),
                   Printing()]
-    
-    if bokeh:
+
+    if BLOCKS_EXTRAS_AVAILABLE:
         extensions.append(Plot(
             'MNIST example',
             channels=[

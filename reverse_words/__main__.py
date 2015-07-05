@@ -9,6 +9,7 @@ which you should download and put to the path indicated in your .fuelrc file.
 """
 import logging
 import argparse
+import glob
 from reverse_words import main
 
 if __name__ == "__main__":
@@ -24,12 +25,18 @@ if __name__ == "__main__":
              " In the `sample` and `beam_search` modes a trained model is "
              " to used reverse words in the input text.")
     parser.add_argument(
-        "save_path", default="chain",
+        "save_path", default="reverse_words.zip", nargs='?',
         help="The path to save the training process if the mode"
              " is `train` OR path to an `.npz` files with learned"
              " parameters if the mode is `test`.")
     parser.add_argument(
         "--num-batches", default=10000, type=int,
         help="Train on this many batches.")
+    parser.add_argument(
+        "--data-path",
+        help="text file(s) to read for training, with bash-like expansion"
+             " so wildchars can be used (e.g. data/*.txt)")
     args = parser.parse_args()
+    if args.data_path:
+        args.data_path = glob.glob(args.data_path)
     main(**vars(args))

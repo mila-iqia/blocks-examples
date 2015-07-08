@@ -1,6 +1,10 @@
 import logging
+import numpy
+import os
+import time
 
 from collections import Counter
+from contextlib import closing
 from theano import tensor
 from toolz import merge
 
@@ -16,8 +20,9 @@ from blocks.bricks.recurrent import GatedRecurrent, Bidirectional
 from blocks.bricks.sequence_generators import (
     LookupFeedback, Readout, SoftmaxEmitter,
     SequenceGenerator)
-from blocks.extensions.saveload import Checkpoint, Load
-from blocks.extensions import FinishAfter, Printing
+from blocks.extensions.saveload import SAVED_TO, LOADED_FROM
+from blocks.extensions import (
+    FinishAfter, Printing, TrainingExtension, SimpleExtension)
 from blocks.extensions.monitoring import TrainingDataMonitoring
 from blocks.extensions.plot import Plot
 from blocks.filter import VariableFilter
@@ -25,13 +30,173 @@ from blocks.graph import ComputationGraph, apply_noise, apply_dropout
 from blocks.initialization import IsotropicGaussian, Orthogonal, Constant
 from blocks.main_loop import MainLoop
 from blocks.model import Model
+from blocks.roles import add_role, WEIGHT
 from blocks.select import Selector
+from blocks.serialization import secure_dump, load, BRICK_DELIMITER
+from blocks.utils import shared_floatx_nans, reraise_as
 
 from picklable_itertools.extras import equizip
 from sampling import BleuValidator, Sampler
 
 
 logger = logging.getLogger(__name__)
+
+
+class SaveLoadUtils(object):
+    """Utility class for checkpointing."""
+
+    @property
+    def path_to_parameters(self):
+        return os.path.join(self.folder, 'params.npz')
+
+    @property
+    def path_to_iteration_state(self):
+        return os.path.join(self.folder, 'iterations_state.pkl')
+
+    @property
+    def path_to_log(self):
+        return os.path.join(self.folder, 'log')
+
+    def load_parameter_values(self, path):
+        with closing(numpy.load(path)) as source:
+            param_values = {}
+            for name, value in source.items():
+                if name != 'pkl':
+                    name_ = name.replace(BRICK_DELIMITER, '/')
+                    if not name_.startswith('/'):
+                        name_ = '/' + name_
+                    param_values[name_] = value
+        return param_values
+
+    def save_parameter_values(self, param_values, path):
+        param_values = {name.replace("/", "-"): param
+                        for name, param in param_values.items()}
+        numpy.savez(path, **param_values)
+
+
+class CheckpointNMT(SimpleExtension, SaveLoadUtils):
+    """Redefines checkpointing for NMT.
+
+        Saves only parameters (npz), iteration state (pickle) and log (pickle).
+
+    """
+
+    def __init__(self, saveto, **kwargs):
+        self.folder = saveto
+        kwargs.setdefault("after_training", True)
+        super(CheckpointNMT, self).__init__(**kwargs)
+
+    def dump_parameters(self, main_loop):
+        params_to_save = main_loop.model.get_parameter_values()
+        self.save_parameter_values(params_to_save,
+                                   self.path_to_parameters)
+
+    def dump_iteration_state(self, main_loop):
+        secure_dump(main_loop.iteration_state, self.path_to_iteration_state)
+
+    def dump_log(self, main_loop):
+        secure_dump(main_loop.log, self.path_to_log)
+
+    def dump(self, main_loop):
+        if not os.path.exists(self.folder):
+            os.mkdir(self.folder)
+        print ""
+        logger.info(" Saving model")
+        start = time.time()
+        logger.info(" ...saving parameters")
+        self.dump_parameters(main_loop)
+        logger.info(" ...saving iteration state")
+        self.dump_iteration_state(main_loop)
+        logger.info(" ...saving log")
+        self.dump_log(main_loop)
+        logger.info(" Model saved, took {} seconds.".format(time.time()-start))
+
+    def do(self, callback_name, *args):
+        try:
+            self.dump(self.main_loop)
+        except Exception:
+            raise
+        finally:
+            already_saved_to = self.main_loop.log.current_row.get(SAVED_TO, ())
+            self.main_loop.log.current_row[SAVED_TO] = (already_saved_to +
+                                                        (self.folder,))
+
+
+class LoadNMT(TrainingExtension, SaveLoadUtils):
+    """Loads parameters log and iterations state."""
+
+    def __init__(self, saveto, **kwargs):
+        self.folder = saveto
+        super(LoadNMT, self).__init__(saveto, **kwargs)
+
+    def before_training(self):
+        if not os.path.exists(self.folder):
+            logger.info("No dump found")
+            return
+        logger.info("Loading the state from {} into the main loop"
+                    .format(self.folder))
+        try:
+            self.load_to(self.main_loop)
+            self.main_loop.log.current_row[LOADED_FROM] = self.folder
+        except Exception:
+            reraise_as("Failed to load the state")
+
+    def load_parameters(self):
+        return self.load_parameter_values(self.path_to_parameters)
+
+    def load_iteration_state(self):
+        with open(self.path_to_iteration_state, "rb") as source:
+            return load(source)
+
+    def load_log(self):
+        with open(self.path_to_log, "rb") as source:
+            return load(source)
+
+    def load(self):
+        return (self.load_parameters(),
+                self.load_iteration_state(),
+                self.load_log())
+
+    def load_to(self, main_loop):
+        """Loads the dump from the root folder into the main loop."""
+        logger.info(" Reloading model")
+        try:
+            logger.info(" ...loading model parameters")
+            params_all = self.load_parameters()
+            params_this = main_loop.model.get_parameter_dict()
+            missing = set(params_this.keys()) - set(params_all.keys())
+            for pname in params_this.keys():
+                if pname in params_all:
+                    val = params_all[pname]
+                    if params_this[pname].get_value().shape != val.shape:
+                        logger.warning(
+                            " Dimension mismatch {}-{} for {}"
+                            .format(params_this[pname].get_value().shape,
+                                    val.shape, pname))
+
+                    params_this[pname].set_value(val)
+                    logger.info(" Loaded to CG {:15}: {}"
+                                .format(val.shape, pname))
+                else:
+                    logger.warning(
+                        " Parameter does not exist: {}".format(pname))
+            logger.info(
+                " Number of parameters loaded for computation graph: {}"
+                .format(len(params_this) - len(missing)))
+        except Exception as e:
+            logger.error(" Error {0}".format(str(e)))
+
+        try:
+            logger.info(" Loading iteration state...")
+            main_loop.iteration_state = self.load_iteration_state()
+        except Exception as e:
+            logger.error(" Error {0}".format(str(e)))
+
+        try:
+            logger.info(" Loading log...")
+            main_loop.log = self.load_log()
+        except Exception as e:
+            logger.error(" Error {0}".format(str(e)))
 
 
 # Helper class
@@ -141,16 +306,20 @@ class GRUInitialState(GatedRecurrent):
         self.children.append(self.initial_transformer)
 
     @application
-    def initial_state(self, state_name, batch_size, *args, **kwargs):
+    def initial_states(self, batch_size, *args, **kwargs):
         attended = kwargs['attended']
-        if state_name == 'states':
-            initial_state = self.initial_transformer.apply(
-                attended[0, :, -self.attended_dim:])
-            return initial_state
-        dim = self.get_dim(state_name)
-        if dim == 0:
-            return tensor.zeros((batch_size,))
-        return tensor.zeros((batch_size, dim))
+        initial_state = self.initial_transformer.apply(
+            attended[0, :, -self.attended_dim:])
+        return initial_state
+
+    def _allocate(self):
+        self.parameters.append(shared_floatx_nans((self.dim, self.dim),
+                               name='state_to_state'))
+        self.parameters.append(shared_floatx_nans((self.dim, 2 * self.dim),
+                               name='state_to_gates'))
+        for i in range(2):
+            if self.parameters[i]:
+                add_role(self.parameters[i], WEIGHT)
 
 
 class Decoder(Initializable):
@@ -316,9 +485,8 @@ def main(config, tr_stream, dev_stream, bokeh=False):
         FinishAfter(after_n_batches=config['finish_after']),
         TrainingDataMonitoring([cost], after_batch=True),
         Printing(after_batch=True),
-        Checkpoint(config['saveto'],
-                   save_separately=['log', 'model', 'iteration_state'],
-                   every_n_batches=config['save_freq'])
+        CheckpointNMT(config['saveto'],
+                      every_n_batches=config['save_freq'])
     ]
 
     # Set up beam search and sampling computation graphs if necessary
@@ -348,7 +516,7 @@ def main(config, tr_stream, dev_stream, bokeh=False):
 
     # Reload model if necessary
     if config['reload']:
-        extensions.append(Load(config['saveto']))
+        extensions.append(LoadNMT(config['saveto']))
 
     # Plot cost in bokeh if necessary
     if bokeh:

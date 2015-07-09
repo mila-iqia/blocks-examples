@@ -1,4 +1,5 @@
 
+import cPickle
 import logging
 import numpy
 import os
@@ -16,6 +17,10 @@ logger = logging.getLogger(__name__)
 
 class SaveLoadUtils(object):
     """Utility class for checkpointing."""
+
+    @property
+    def path_to_folder(self):
+        return self.folder
 
     @property
     def path_to_parameters(self):
@@ -67,11 +72,11 @@ class CheckpointNMT(SimpleExtension, SaveLoadUtils):
         secure_dump(main_loop.iteration_state, self.path_to_iteration_state)
 
     def dump_log(self, main_loop):
-        secure_dump(main_loop.log, self.path_to_log)
+        secure_dump(main_loop.log, self.path_to_log, cPickle.dump)
 
     def dump(self, main_loop):
-        if not os.path.exists(self.folder):
-            os.mkdir(self.folder)
+        if not os.path.exists(self.path_to_folder):
+            os.mkdir(self.path_to_folder)
         print ""
         logger.info(" Saving model")
         start = time.time()
@@ -79,8 +84,8 @@ class CheckpointNMT(SimpleExtension, SaveLoadUtils):
         self.dump_parameters(main_loop)
         logger.info(" ...saving iteration state")
         self.dump_iteration_state(main_loop)
-        logger.info(" ...saving log")
-        self.dump_log(main_loop)
+        #logger.info(" ...saving log")
+        #self.dump_log(main_loop)
         logger.info(" Model saved, took {} seconds.".format(time.time()-start))
 
     def do(self, callback_name, *args):
@@ -91,7 +96,8 @@ class CheckpointNMT(SimpleExtension, SaveLoadUtils):
         finally:
             already_saved_to = self.main_loop.log.current_row.get(SAVED_TO, ())
             self.main_loop.log.current_row[SAVED_TO] = (already_saved_to +
-                                                        (self.folder,))
+                                                        (self.path_to_folder +
+                                                            'params.npz',))
 
 
 class LoadNMT(TrainingExtension, SaveLoadUtils):
@@ -102,14 +108,14 @@ class LoadNMT(TrainingExtension, SaveLoadUtils):
         super(LoadNMT, self).__init__(saveto, **kwargs)
 
     def before_training(self):
-        if not os.path.exists(self.folder):
+        if not os.path.exists(self.path_to_folder):
             logger.info("No dump found")
             return
         logger.info("Loading the state from {} into the main loop"
-                    .format(self.folder))
+                    .format(self.path_to_folder))
         try:
             self.load_to(self.main_loop)
-            self.main_loop.log.current_row[LOADED_FROM] = self.folder
+            self.main_loop.log.current_row[LOADED_FROM] = self.path_to_folder
         except Exception:
             reraise_as("Failed to load the state")
 
@@ -123,11 +129,6 @@ class LoadNMT(TrainingExtension, SaveLoadUtils):
     def load_log(self):
         with open(self.path_to_log, "rb") as source:
             return load(source)
-
-    def load(self):
-        return (self.load_parameters(),
-                self.load_iteration_state(),
-                self.load_log())
 
     def load_to(self, main_loop):
         """Loads the dump from the root folder into the main loop."""
@@ -166,6 +167,6 @@ class LoadNMT(TrainingExtension, SaveLoadUtils):
 
         try:
             logger.info(" Loading log...")
-            main_loop.log = self.load_log()
+            #main_loop.log = self.load_log()
         except Exception as e:
             logger.error(" Error {0}".format(str(e)))

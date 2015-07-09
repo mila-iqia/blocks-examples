@@ -92,7 +92,7 @@ class Sampler(SimpleExtension, SamplingBase):
 
         # TODO: this is problematic for boundary conditions, eg. last batch
         sample_idx = numpy.random.choice(
-            self.config['batch_size'], self.config['hook_samples'],
+            batch['source'].shape[0], self.config['hook_samples'],
             replace=False)
         src_batch = batch[self.main_loop.data_stream.mask_sources[0]]
         trg_batch = batch[self.main_loop.data_stream.mask_sources[1]]

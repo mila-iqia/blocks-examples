@@ -10,6 +10,6 @@ def test_mnist_lenet():
         with open(f.name, "rb") as source:
             main_loop = load(source)
     main_loop.find_extension("FinishAfter").set_conditions(
-        after_n_epochs=2)
+        after_n_batches=3)
     main_loop.run()
     assert main_loop.log.status['epochs_done'] == 2

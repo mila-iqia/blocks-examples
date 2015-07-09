@@ -11,7 +11,7 @@ from blocks.initialization import IsotropicGaussian, Constant
 from blocks.model import Model
 from fuel.datasets import IterableDataset
 from fuel.schemes import ConstantScheme
-from fuel.transfomers import Batch
+from fuel.transformers import Batch
 from blocks.extensions import FinishAfter, Timing, Printing
 from blocks.extensions.saveload import Checkpoint
 from blocks.extensions.monitoring import (TrainingDataMonitoring,

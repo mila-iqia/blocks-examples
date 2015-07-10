@@ -129,7 +129,8 @@ class LeNet(FeedforwardSequence, Initializable):
 
 
 def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
-         conv_sizes=None, pool_sizes=None, batch_size=500):
+         conv_sizes=None, pool_sizes=None, batch_size=500,
+         num_batches=None):
     if feature_maps is None:
         feature_maps = [20, 50]
     if mlp_hiddens is None:
@@ -198,7 +199,8 @@ def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
     # and monitoring;
     # `ProgressBar` displays a nice progress bar during training.
     extensions = [Timing(),
-                  FinishAfter(after_n_epochs=num_epochs),
+                  FinishAfter(after_n_epochs=num_epochs,
+                              after_n_batches=num_batches),
                   DataStreamMonitoring(
                       [cost, error_rate],
                       mnist_test_stream,

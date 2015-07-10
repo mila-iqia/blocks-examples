@@ -21,4 +21,3 @@ if __name__ == "__main__":
                               "process."))
     args = parser.parse_args()
     main(**vars(args))
-

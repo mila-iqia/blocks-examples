@@ -226,7 +226,8 @@ class BleuValidator(SimpleExtension, SamplingBase):
                     trans_out = self._idx_to_word(trans_out, self.trg_ivocab)
 
                 except ValueError:
-                    print "Can NOT find a translation for line: {}".format(i+1)
+                    logger.info(
+                        "Can NOT find a translation for line: {}".format(i+1))
                     trans_out = '<UNK>'
 
                 if j == 0:
@@ -236,11 +237,12 @@ class BleuValidator(SimpleExtension, SamplingBase):
                         print >> ftrans, trans_out
 
             if i != 0 and i % 100 == 0:
-                print "Translated {} lines of validation set...".format(i)
+                logger.info(
+                    "Translated {} lines of validation set...".format(i))
 
             mb_subprocess.stdin.flush()
 
-        print "Total cost of the validation: {}".format(total_cost)
+        logger.info("Total cost of the validation: {}".format(total_cost))
         self.data_stream.reset()
         if self.verbose:
             ftrans.close()
@@ -248,7 +250,7 @@ class BleuValidator(SimpleExtension, SamplingBase):
         # send end of file, read output.
         mb_subprocess.stdin.close()
         stdout = mb_subprocess.stdout.readline()
-        print "output ", stdout
+        logger.info(stdout)
         out_parse = re.match(r'BLEU = [-.0-9]+', stdout)
         logger.info("Validation Took: {} minutes".format(
             float(time.time() - val_start_time) / 60.))
@@ -257,7 +259,7 @@ class BleuValidator(SimpleExtension, SamplingBase):
         # extract the score
         bleu_score = float(out_parse.group()[6:])
         self.val_bleu_curve.append(bleu_score)
-        print bleu_score
+        logger.info(bleu_score)
         mb_subprocess.terminate()
 
         return bleu_score

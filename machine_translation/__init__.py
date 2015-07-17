@@ -132,9 +132,10 @@ def main(config, tr_stream, dev_stream, bokeh=False):
     # Add early stopping based on bleu
     if config['bleu_script'] is not None:
         logger.info("Building bleu validator")
-        BleuValidator(sampling_input, samples=samples, config=config,
-                      model=search_model, data_stream=dev_stream,
-                      every_n_batches=config['bleu_val_freq'])
+        extensions.append(
+            BleuValidator(sampling_input, samples=samples, config=config,
+                          model=search_model, data_stream=dev_stream,
+                          every_n_batches=config['bleu_val_freq']))
 
     # Reload model if necessary
     if config['reload']:

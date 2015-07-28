@@ -6,6 +6,7 @@ import os
 import subprocess
 import tarfile
 import urllib2
+import uuid
 
 TRAIN_DATA_URL = 'http://www.statmt.org/wmt15/training-parallel-nc-v10.tgz'
 VALID_DATA_URL = 'http://www.statmt.org/wmt15/dev-v2.tgz'
@@ -25,11 +26,12 @@ parser = argparse.ArgumentParser(
 This script donwloads parallel corpora given source and target pair language
 indicators and preprocess it respectively for neural machine translation.For
 the preprocessing, moses tokenizer is applied first then tokenized corpora
-are used to extract vocabularies for source and target languages.
+are used to extract vocabularies for source and target languages. Finally the
+tokenized parallel corpora are shuffled for SGD.
 
 Note that, this script is written specificaly for WMT15 training and
 development corpora, hence change the corresponding sections if you plan to use
-some other parallel corpora.
+some other data.
 """, formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument("-s", "--source", type=str, help="Source language",
                     default="cs")
@@ -101,6 +103,98 @@ def extract_tar_file_to(file_to_extract, extract_into, names_to_look):
     return extracted_filenames
 
 
+def tokenize_text_files(files_to_tokenize, tokenizer):
+    for name in files_to_tokenize:
+        logger.info("Tokenizing file [{}]".format(name))
+        out_file = os.path.join(
+            OUTPUT_DIR, os.path.basename(name) + '.tok')
+        logger.info("...writing tokenized file [{}]".format(out_file))
+        var = ["perl", tokenizer,  "-l", name.split('.')[-1]]
+        if not os.path.exists(out_file):
+            with open(name, 'r') as inp:
+                with open(out_file, 'w', 0) as out:
+                    subprocess.Popen(var, stdin=inp, stdout=out, shell=False)
+        else:
+            logger.info("...file exists [{}]".format(out_file))
+
+
+def create_vocabularies(tr_files, preprocess_file):
+    src_vocab_name = os.path.join(
+        OUTPUT_DIR, 'vocab.{}-{}.{}'.format(
+            args.source, args.target, args.source))
+    trg_vocab_name = os.path.join(
+        OUTPUT_DIR, 'vocab.{}-{}.{}'.format(
+            args.source, args.target, args.target))
+    src_filename = os.path.basename(
+        tr_files[[i for i, n in enumerate(tr_files)
+                  if n.endswith(args.source)][0]]) + '.tok'
+    trg_filename = os.path.basename(
+        tr_files[[i for i, n in enumerate(tr_files)
+                  if n.endswith(args.target)][0]]) + '.tok'
+    logger.info("Creating source vocabulary [{}]".format(src_vocab_name))
+    if not os.path.exists(src_vocab_name):
+        subprocess.call(" python {} -d {} -v {} {}".format(
+            preprocess_file, src_vocab_name, args.source_vocab,
+            os.path.join(OUTPUT_DIR, src_filename)),
+            shell=True)
+    else:
+        logger.info("...file exists [{}]".format(src_vocab_name))
+
+    logger.info("Creating target vocabulary [{}]".format(trg_vocab_name))
+    if not os.path.exists(trg_vocab_name):
+        subprocess.call(" python {} -d {} -v {} {}".format(
+            preprocess_file, trg_vocab_name, args.target_vocab,
+            os.path.join(OUTPUT_DIR, trg_filename)),
+            shell=True)
+    else:
+        logger.info("...file exists [{}]".format(trg_vocab_name))
+    return src_filename, trg_filename
+
+
+def merge_parallel(src_filename, trg_filename, merged_filename):
+    with open(src_filename, 'r') as left:
+        with open(trg_filename, 'r') as right:
+            with open(merged_filename, 'w') as final:
+                while True:
+                    lline = left.readline()
+                    rline = right.readline()
+                    if (lline == '') or (rline == ''):
+                        break
+                    assert (lline[-1] == '\n')
+                    assert (rline[-1] == '\n')
+                    if (lline != '\n') and (rline != '\n'):
+                        final.write(lline[:-1] + ' ||| ' + rline)
+
+
+def split_parallel(merged_filename, src_filename, trg_filename):
+    with open(merged_filename) as combined:
+        with open(src_filename, 'w') as left:
+            with open(trg_filename, 'w') as right:
+                for line in combined:
+                    line = line.split('|||')
+                    left.write(line[0].strip() + '\n')
+                    right.write(line[1].strip() + '\n')
+
+
+def shuffle_parallel(src_filename, trg_filename):
+    logger.info("Shuffling jointly [{}] and [{}]".format(src_filename,
+                                                         trg_filename))
+    out_src = src_filename + '.shuf'
+    out_trg = trg_filename + '.shuf'
+    if not os.path.exists(out_src) and os.path.exists(out_trg):
+        merged_filename = str(uuid.uuid4())
+        shuffled_filename = str(uuid.uuid4())
+        merge_parallel(src_filename, trg_filename, merged_filename)
+        subprocess.call(" shuf {} > {} ".format(merged_filename,
+                                                shuffled_filename),
+                        shell=True)
+        split_parallel(shuffled_filename, out_src, out_trg)
+        os.remove(merged_filename)
+        os.remove(shuffled_filename)
+    else:
+        logger.info("...files exist [{}] and [{}]".format(out_src, out_trg))
+
+
 def main():
     train_data_file = os.path.join(OUTPUT_DIR, 'tmp', 'train_data.tgz')
     valid_data_file = os.path.join(OUTPUT_DIR, 'tmp', 'valid_data.tgz')
@@ -134,49 +228,14 @@ def main():
                             target_prefix_file)
 
     # Apply tokenizer
-    for name in tr_files + val_files:
-        logger.info("Tokenizing file [{}]".format(name))
-        out_file = os.path.join(
-            OUTPUT_DIR, os.path.basename(name) + '.tok')
-        logger.info("...writing tokenized file [{}]".format(out_file))
-        var = ["perl", tokenizer_file,  "-l", name.split('.')[-1]]
-        if not os.path.exists(out_file):
-            with open(name, 'r') as inp:
-                with open(out_file, 'w', 0) as out:
-                    subprocess.Popen(var, stdin=inp, stdout=out, shell=False)
-        else:
-            logger.info("...file exists [{}]".format(out_file))
+    tokenize_text_files(tr_files + val_files, tokenizer_file)
 
     # Apply preprocessing and construct vocabularies
-    src_vocab_name = os.path.join(
-        OUTPUT_DIR, 'vocab.{}-{}.{}'.format(
-            args.source, args.target, args.source))
-    trg_vocab_name = os.path.join(
-        OUTPUT_DIR, 'vocab.{}-{}.{}'.format(
-            args.source, args.target, args.target))
-    src_file_name = os.path.basename(
-        tr_files[[i for i, n in enumerate(tr_files)
-                  if n.endswith(args.source)][0]]) + '.tok'
-    trg_file_name = os.path.basename(
-        tr_files[[i for i, n in enumerate(tr_files)
-                  if n.endswith(args.target)][0]]) + '.tok'
-    logger.info("Creating source vocabulary [{}]".format(src_vocab_name))
-    if not os.path.exists(src_vocab_name):
-        subprocess.call(" python {} -d {} -v {} {}".format(
-            preprocess_file, src_vocab_name, args.source_vocab,
-            os.path.join(OUTPUT_DIR, src_file_name)),
-            shell=True)
-    else:
-        logger.info("...file exists [{}]".format(src_vocab_name))
+    src_filename, trg_filename = create_vocabularies(tr_files, preprocess_file)
 
-    logger.info("Creating target vocabulary [{}]".format(trg_vocab_name))
-    if not os.path.exists(trg_vocab_name):
-        subprocess.call(" python {} -d {} -v {} {}".format(
-            preprocess_file, trg_vocab_name, args.target_vocab,
-            os.path.join(OUTPUT_DIR, trg_file_name)),
-            shell=True)
-    else:
-        logger.info("...file exists [{}]".format(trg_vocab_name))
+    # Shuffle datasets
+    shuffle_parallel(os.path.join(OUTPUT_DIR, src_filename),
+                     os.path.join(OUTPUT_DIR, trg_filename))
 
 
 if __name__ == "__main__":

@@ -84,8 +84,8 @@ class CheckpointNMT(SimpleExtension, SaveLoadUtils):
         self.dump_parameters(main_loop)
         logger.info(" ...saving iteration state")
         self.dump_iteration_state(main_loop)
-        #logger.info(" ...saving log")
-        #self.dump_log(main_loop)
+        logger.info(" ...saving log")
+        self.dump_log(main_loop)
         logger.info(" Model saved, took {} seconds.".format(time.time()-start))
 
     def do(self, callback_name, *args):
@@ -128,7 +128,7 @@ class LoadNMT(TrainingExtension, SaveLoadUtils):
 
     def load_log(self):
         with open(self.path_to_log, "rb") as source:
-            return load(source)
+            return cPickle.load(source)
 
     def load_to(self, main_loop):
         """Loads the dump from the root folder into the main loop."""
@@ -167,6 +167,6 @@ class LoadNMT(TrainingExtension, SaveLoadUtils):
 
         try:
             logger.info(" Loading log...")
-            #main_loop.log = self.load_log()
+            main_loop.log = self.load_log()
         except Exception as e:
             logger.error(" Error {0}".format(str(e)))

@@ -7,12 +7,12 @@ def get_config_cs2en():
     config['seq_len'] = 50
 
     # Number of hidden units in encoder/decoder GRU
-    config['enc_nhids'] = 100
-    config['dec_nhids'] = 100
+    config['enc_nhids'] = 1000
+    config['dec_nhids'] = 1000
 
     # Dimension of the word embedding matrix in encoder/decoder
-    config['enc_embed'] = 62
-    config['dec_embed'] = 62
+    config['enc_embed'] = 620
+    config['dec_embed'] = 620
 
     # Where to save model, this corresponds to 'prefix' in groundhog
     config['saveto'] = 'search_model_cs2en'
@@ -48,22 +48,22 @@ def get_config_cs2en():
     # Vocabulary/dataset related ----------------------------------------------
 
     # Root directory for dataset
-    datadir = '/data/lisatmp3/firatorh/nmt/wmt15/data/cs-en/'
+    datadir = './data/'
 
     # Module name of the stream that will be used
     config['stream'] = 'stream_cs2en'
 
     # Source and target vocabularies
-    config['src_vocab'] = datadir + 'all.tok.clean.shuf.cs-en.cs.vocab.pkl'
-    config['trg_vocab'] = datadir + 'all.tok.clean.shuf.cs-en.en.vocab.pkl'
+    config['src_vocab'] = datadir + 'vocab.cs-en.cs.pkl'
+    config['trg_vocab'] = datadir + 'vocab.cs-en.en.pkl'
 
     # Source and target datasets
-    config['src_data'] = datadir + 'all.tok.clean.shuf.cs-en.cs'
-    config['trg_data'] = datadir + 'all.tok.clean.shuf.cs-en.en'
+    config['src_data'] = datadir + 'news-commentary-v10.cs-en.cs.tok.shuf'
+    config['trg_data'] = datadir + 'news-commentary-v10.cs-en.en.tok.shuf'
 
     # Source and target vocabulary sizes
-    config['src_vocab_size'] = 40000
-    config['trg_vocab_size'] = 40000
+    config['src_vocab_size'] = 30000
+    config['trg_vocab_size'] = 30000
 
     # Special tokens and indexes
     config['unk_id'] = 1
@@ -80,10 +80,10 @@ def get_config_cs2en():
     config['bleu_script'] = None #datadir + 'multi-bleu.perl'
 
     # Validation set source file
-    config['val_set'] = datadir + 'newstest2013.tok.cs'
+    config['val_set'] = datadir + 'newstest2013.cs.tok'
 
     # Validation set gold file
-    config['val_set_grndtruth'] = datadir + 'newstest2013.tok.en'
+    config['val_set_grndtruth'] = datadir + 'newstest2013.en.tok'
 
     # Print validation output to file
     config['output_val_set'] = True
@@ -92,7 +92,7 @@ def get_config_cs2en():
     config['val_set_out'] = config['saveto'] + '_validation_out.txt'
 
     # Beam-size
-    config['beam_size'] = 20
+    config['beam_size'] = 12
 
     # Timing/monitoring related -----------------------------------------------
 
@@ -100,19 +100,19 @@ def get_config_cs2en():
     config['finish_after'] = 1000000
 
     # Reload model from files if exist
-    config['reload'] = False
+    config['reload'] = True
 
     # Save model after this many updates
-    config['save_freq'] = 50
+    config['save_freq'] = 500
 
     # Show samples from model after this many updates
-    config['sampling_freq'] = 1
+    config['sampling_freq'] = 13
 
     # Show this many samples at each sampling
-    config['hook_samples'] = 0
+    config['hook_samples'] = 2
 
     # Validate bleu after this many updates
-    config['bleu_val_freq'] = 2000
+    config['bleu_val_freq'] = 5000
 
     # Start bleu validation after this many updates
     config['val_burn_in'] = 50000

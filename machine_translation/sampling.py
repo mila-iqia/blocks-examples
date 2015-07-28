@@ -65,11 +65,6 @@ class Sampler(SimpleExtension, SamplingBase):
 
     def do(self, which_callback, *args):
 
-        # Get current model parameters
-        if not self.is_synced:
-            self.model.params = self.main_loop.model.params
-            self.is_synced = True
-
         # Get dictionaries, this may not be the practical way
         sources = self._get_attr_rec(self.main_loop, 'data_stream')
 

@@ -112,7 +112,7 @@ def main(config, tr_stream, dev_stream, bokeh=False):
     ]
 
     # Set up beam search and sampling computation graphs if necessary
-    if config['hook_samples'] > 1 or config['bleu_script'] is not None:
+    if config['hook_samples'] >= 1 or config['bleu_script'] is not None:
         logger.info("Building sampling model")
         sampling_representation = encoder.apply(
             sampling_input, tensor.ones(sampling_input.shape))
@@ -123,7 +123,7 @@ def main(config, tr_stream, dev_stream, bokeh=False):
                 ComputationGraph(generated[1]))  # generated[1] is next_outputs
 
     # Add sampling
-    if config['hook_samples'] > 1:
+    if config['hook_samples'] >= 1:
         logger.info("Building sampler")
         extensions.append(
             Sampler(model=search_model, config=config, data_stream=tr_stream,

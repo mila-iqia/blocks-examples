@@ -120,10 +120,10 @@ def tokenize_text_files(files_to_tokenize, tokenizer):
 
 def create_vocabularies(tr_files, preprocess_file):
     src_vocab_name = os.path.join(
-        OUTPUT_DIR, 'vocab.{}-{}.{}'.format(
+        OUTPUT_DIR, 'vocab.{}-{}.{}.pkl'.format(
             args.source, args.target, args.source))
     trg_vocab_name = os.path.join(
-        OUTPUT_DIR, 'vocab.{}-{}.{}'.format(
+        OUTPUT_DIR, 'vocab.{}-{}.{}.pkl'.format(
             args.source, args.target, args.target))
     src_filename = os.path.basename(
         tr_files[[i for i, n in enumerate(tr_files)
@@ -181,16 +181,22 @@ def shuffle_parallel(src_filename, trg_filename):
                                                          trg_filename))
     out_src = src_filename + '.shuf'
     out_trg = trg_filename + '.shuf'
-    if not os.path.exists(out_src) and os.path.exists(out_trg):
+    if not os.path.exists(out_src) or not os.path.exists(out_trg):
         merged_filename = str(uuid.uuid4())
         shuffled_filename = str(uuid.uuid4())
-        merge_parallel(src_filename, trg_filename, merged_filename)
-        subprocess.call(" shuf {} > {} ".format(merged_filename,
-                                                shuffled_filename),
-                        shell=True)
-        split_parallel(shuffled_filename, out_src, out_trg)
-        os.remove(merged_filename)
-        os.remove(shuffled_filename)
+        try:
+            merge_parallel(src_filename, trg_filename, merged_filename)
+            subprocess.call(" shuf {} > {} ".format(merged_filename,
+                                                    shuffled_filename),
+                            shell=True)
+            split_parallel(shuffled_filename, out_src, out_trg)
+        except Exception as e:
+            logger.error("{}".format(str(e)))
+        if os.path.exists(merged_filename):
+            os.remove(merged_filename)
+        if os.path.exists(shuffled_filename):
+            os.remove(shuffled_filename)
+        logger.info("...files shuffled [{}] and [{}]".format(out_src, out_trg))
     else:
         logger.info("...files exist [{}] and [{}]".format(out_src, out_trg))
 

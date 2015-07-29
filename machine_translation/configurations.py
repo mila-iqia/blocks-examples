@@ -51,7 +51,7 @@ def get_config_cs2en():
     datadir = './data/'
 
     # Module name of the stream that will be used
-    config['stream'] = 'stream_cs2en'
+    config['stream'] = 'stream'
 
     # Source and target vocabularies
     config['src_vocab'] = datadir + 'vocab.cs-en.cs.pkl'

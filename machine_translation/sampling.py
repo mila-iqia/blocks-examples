@@ -173,10 +173,6 @@ class BleuValidator(SimpleExtension, SamplingBase):
                 self.config['val_burn_in']:
             return
 
-        # Get current model parameters
-        self.model.set_param_values(
-            self.main_loop.model.get_param_values())
-
         # Evaluate and save if necessary
         self._save_model(self._evaluate_model())
 
@@ -283,7 +279,8 @@ class BleuValidator(SimpleExtension, SamplingBase):
             # Save the model here
             s = signal.signal(signal.SIGINT, signal.SIG_IGN)
             logger.info("Saving new model {}".format(model.path))
-            numpy.savez(model.path, **self.main_loop.model.get_param_values())
+            numpy.savez(
+                model.path, **self.main_loop.model.get_parameter_dict())
             numpy.savez(
                 os.path.join(self.config['saveto'], 'val_bleu_scores.npz'),
                 bleu_scores=self.val_bleu_curve)

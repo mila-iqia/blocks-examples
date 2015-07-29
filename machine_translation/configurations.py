@@ -29,7 +29,7 @@ def get_config_cs2en():
     config['step_rule'] = 'AdaDelta'
 
     # Gradient clipping threshold
-    config['step_clipping'] = 1
+    config['step_clipping'] = 1.
 
     # Std of weight initialization
     config['weight_scale'] = 0.01
@@ -77,7 +77,7 @@ def get_config_cs2en():
     config['normalized_bleu'] = True
 
     # Bleu script that will be used (moses multi-perl in this case)
-    config['bleu_script'] = None #datadir + 'multi-bleu.perl'
+    config['bleu_script'] = datadir + 'multi-bleu.perl'
 
     # Validation set source file
     config['val_set'] = datadir + 'newstest2013.cs.tok'
@@ -115,6 +115,6 @@ def get_config_cs2en():
     config['bleu_val_freq'] = 5000
 
     # Start bleu validation after this many updates
-    config['val_burn_in'] = 50000
+    config['val_burn_in'] = 80000
 
     return config

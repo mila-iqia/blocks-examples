@@ -13,7 +13,6 @@ further options of preprocessing.
 """
 
 import argparse
-import importlib
 import logging
 import pprint
 

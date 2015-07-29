@@ -25,6 +25,7 @@ from blocks.monitoring import aggregation
 from blocks.extensions import FinishAfter, Printing
 from blocks.extensions.saveload import Checkpoint
 from blocks.extensions.monitoring import TrainingDataMonitoring
+from blocks.serialization import load
 from blocks.main_loop import MainLoop
 from blocks.select import Selector
 
@@ -98,8 +99,8 @@ def main(mode, save_path, steps, num_batches):
                         Printing(every_n_batches=100)])
         main_loop.run()
     elif mode == "sample":
-        main_loop = cPickle.load(open(save_path, "rb"))
-        generator = main_loop.model
+        main_loop = load(open(save_path, "rb"))
+        generator = main_loop.model.get_top_bricks()[-1]
 
         sample = ComputationGraph(generator.generate(
             n_steps=steps, batch_size=1, iterate=True)).get_theano_function()

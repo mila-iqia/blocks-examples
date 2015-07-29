@@ -10,7 +10,6 @@ from six.moves import cPickle
 import numpy
 import theano
 from theano import tensor
-from theano.misc.pkl_utils import load
 
 from blocks.bricks import Tanh
 from blocks.bricks.recurrent import GatedRecurrent

@@ -98,7 +98,7 @@ class WordReverser(Initializable):
         fork = Fork([name for name in encoder.prototype.apply.sequences
                     if name != 'mask'])
         fork.input_dim = dimension
-        fork.output_dims = [dimension for name in fork.input_names]
+        fork.output_dims = [encoder.prototype.get_dim(name) for name in fork.input_names]
         lookup = LookupTable(alphabet_size, dimension)
         transition = SimpleRecurrent(
             activation=Tanh(),

@@ -61,7 +61,7 @@ def get_config_cs2en():
     config['src_data'] = datadir + 'news-commentary-v10.cs-en.cs.tok.shuf'
     config['trg_data'] = datadir + 'news-commentary-v10.cs-en.en.tok.shuf'
 
-    # Source and target vocabulary sizes
+    # Source and target vocabulary sizes, should include bos, eos, unk tokens
     config['src_vocab_size'] = 30000
     config['trg_vocab_size'] = 30000
 
@@ -89,7 +89,7 @@ def get_config_cs2en():
     config['output_val_set'] = True
 
     # Validation output file
-    config['val_set_out'] = config['saveto'] + '_validation_out.txt'
+    config['val_set_out'] = config['saveto'] + '/validation_out.txt'
 
     # Beam-size
     config['beam_size'] = 12

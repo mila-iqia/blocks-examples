@@ -31,17 +31,6 @@ class SamplingBase(object):
         return [x if x < self.config['src_vocab_size'] else self.unk_idx
                 for x in seq]
 
-    def _parse_input(self, line):
-        seqin = line.split()
-        seqlen = len(seqin)
-        seq = numpy.zeros(seqlen+1, dtype='int64')
-        for idx, sx in enumerate(seqin):
-            seq[idx] = self.vocab.get(sx, self.unk_idx)
-            if seq[idx] >= self.config['src_vocab_size']:
-                seq[idx] = self.unk_idx
-        seq[-1] = self.eos_idx
-        return seq
-
     def _idx_to_word(self, seq, ivocab):
         return " ".join([ivocab.get(idx, "<UNK>") for idx in seq])
 
@@ -84,11 +73,12 @@ class Sampler(SimpleExtension, SamplingBase):
         # WARNING: Source and target indices from data stream
         #  can be different
         batch = args[0]
+        batch_size = batch['source'].shape[0]
+        hook_samples = min(batch_size, self.config['hook_samples'])
 
         # TODO: this is problematic for boundary conditions, eg. last batch
         sample_idx = numpy.random.choice(
-            batch['source'].shape[0], self.config['hook_samples'],
-            replace=False)
+            batch_size, hook_samples, replace=False)
         src_batch = batch[self.main_loop.data_stream.mask_sources[0]]
         trg_batch = batch[self.main_loop.data_stream.mask_sources[1]]
 
@@ -96,23 +86,25 @@ class Sampler(SimpleExtension, SamplingBase):
         target_ = trg_batch[sample_idx, :]
 
         # Sample
-        _1, outputs, _2, _3, costs = (self.sampling_fn(input_))
-        outputs = outputs.T
-        costs = list(costs.T)
-
         print ""
-        for i in range(len(outputs)):
+        for i in range(hook_samples):
             input_length = self._get_true_length(input_[i], self.src_vocab)
             target_length = self._get_true_length(target_[i], self.trg_vocab)
-            sample_length = self._get_true_length(outputs[i], self.trg_vocab)
+
+            inp = input_[i, :input_length]
+            _1, outputs, _2, _3, costs = (self.sampling_fn(inp[None, :]))
+            outputs = outputs.flatten()
+            costs = costs.T
+
+            sample_length = self._get_true_length(outputs, self.trg_vocab)
 
             print "Input : ", self._idx_to_word(input_[i][:input_length],
                                                 self.src_ivocab)
             print "Target: ", self._idx_to_word(target_[i][:target_length],
                                                 self.trg_ivocab)
-            print "Sample: ", self._idx_to_word(outputs[i][:sample_length],
+            print "Sample: ", self._idx_to_word(outputs[:sample_length],
                                                 self.trg_ivocab)
-            print "Sample cost: ", costs[i][:sample_length].sum()
+            print "Sample cost: ", costs[:sample_length].sum()
             print ""
 
 

@@ -126,8 +126,10 @@ def main(config, tr_stream, dev_stream, bokeh=False):
     if config['hook_samples'] >= 1:
         logger.info("Building sampler")
         extensions.append(
-            Sampler(model=search_model, config=config, data_stream=tr_stream,
-                    every_n_batches=config['sampling_freq']))
+            Sampler(model=search_model, data_stream=tr_stream,
+                    hook_samples=config['hook_samples'],
+                    every_n_batches=config['sampling_freq'],
+                    src_vocab_size=config['src_vocab_size']))
 
     # Add early stopping based on bleu
     if config['bleu_script'] is not None:

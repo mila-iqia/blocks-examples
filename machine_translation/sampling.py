@@ -118,7 +118,7 @@ class BleuValidator(SimpleExtension, SamplingBase):
 
     def __init__(self, source_sentence, samples, model, data_stream,
                  config, n_best=1, track_n_models=1, trg_ivocab=None,
-                 **kwargs):
+                 normalize=True, **kwargs):
         # TODO: change config structure
         super(BleuValidator, self).__init__(**kwargs)
         self.source_sentence = source_sentence
@@ -128,6 +128,7 @@ class BleuValidator(SimpleExtension, SamplingBase):
         self.config = config
         self.n_best = n_best
         self.track_n_models = track_n_models
+        self.normalize = normalize
         self.verbose = config.get('val_set_out', None)
 
         # Helpers
@@ -203,6 +204,11 @@ class BleuValidator(SimpleExtension, SamplingBase):
                     input_values={self.source_sentence: input_},
                     max_length=3*len(seq), eol_symbol=self.eos_idx,
                     ignore_first_eol=True)
+
+            # normalize costs according to the sequence lengths
+            if self.normalize:
+                lengths = numpy.array([len(s) for s in trans])
+                costs = costs / lengths
 
             nbest_idx = numpy.argsort(costs)[:self.n_best]
             for j, best in enumerate(nbest_idx):

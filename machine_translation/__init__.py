@@ -137,6 +137,7 @@ def main(config, tr_stream, dev_stream, bokeh=False):
         extensions.append(
             BleuValidator(sampling_input, samples=samples, config=config,
                           model=search_model, data_stream=dev_stream,
+                          normalize=config['normalized_bleu'],
                           every_n_batches=config['bleu_val_freq']))
 
     # Reload model if necessary

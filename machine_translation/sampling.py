@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import logging
 import numpy
 import operator
@@ -27,9 +29,8 @@ class SamplingBase(object):
         except ValueError:
             return len(seq)
 
-    def _oov_to_unk(self, seq):
-        return [x if x < self.config['src_vocab_size'] else self.unk_idx
-                for x in seq]
+    def _oov_to_unk(self, seq, vocab_size, unk_idx):
+        return [x if x < vocab_size else unk_idx for x in seq]
 
     def _idx_to_word(self, seq, ivocab):
         return " ".join([ivocab.get(idx, "<UNK>") for idx in seq])
@@ -38,17 +39,18 @@ class SamplingBase(object):
 class Sampler(SimpleExtension, SamplingBase):
     """Random Sampling from model."""
 
-    def __init__(self, model, data_stream, config,
+    def __init__(self, model, data_stream, hook_samples=1,
                  src_vocab=None, trg_vocab=None, src_ivocab=None,
-                 trg_ivocab=None, **kwargs):
+                 trg_ivocab=None, src_vocab_size=None, **kwargs):
         super(Sampler, self).__init__(**kwargs)
         self.model = model
-        self.config = config
+        self.hook_samples = hook_samples
         self.data_stream = data_stream
         self.src_vocab = src_vocab
         self.trg_vocab = trg_vocab
         self.src_ivocab = src_ivocab
         self.trg_ivocab = trg_ivocab
+        self.src_vocab_size = src_vocab_size
         self.is_synced = False
         self.sampling_fn = model.get_theano_function()
 
@@ -68,13 +70,15 @@ class Sampler(SimpleExtension, SamplingBase):
             self.src_ivocab = {v: k for k, v in self.src_vocab.items()}
         if not self.trg_ivocab:
             self.trg_ivocab = {v: k for k, v in self.trg_vocab.items()}
+        if not self.src_vocab_size:
+            self.src_vocab_size = len(self.src_vocab)
 
         # Randomly select source samples from the current batch
         # WARNING: Source and target indices from data stream
         #  can be different
         batch = args[0]
         batch_size = batch['source'].shape[0]
-        hook_samples = min(batch_size, self.config['hook_samples'])
+        hook_samples = min(batch_size, self.hook_samples)
 
         # TODO: this is problematic for boundary conditions, eg. last batch
         sample_idx = numpy.random.choice(
@@ -86,7 +90,7 @@ class Sampler(SimpleExtension, SamplingBase):
         target_ = trg_batch[sample_idx, :]
 
         # Sample
-        print ""
+        print()
         for i in range(hook_samples):
             input_length = self._get_true_length(input_[i], self.src_vocab)
             target_length = self._get_true_length(target_[i], self.trg_vocab)
@@ -98,14 +102,14 @@ class Sampler(SimpleExtension, SamplingBase):
 
             sample_length = self._get_true_length(outputs, self.trg_vocab)
 
-            print "Input : ", self._idx_to_word(input_[i][:input_length],
-                                                self.src_ivocab)
-            print "Target: ", self._idx_to_word(target_[i][:target_length],
-                                                self.trg_ivocab)
-            print "Sample: ", self._idx_to_word(outputs[:sample_length],
-                                                self.trg_ivocab)
-            print "Sample cost: ", costs[:sample_length].sum()
-            print ""
+            print("Input : ", self._idx_to_word(input_[i][:input_length],
+                                                self.src_ivocab))
+            print("Target: ", self._idx_to_word(target_[i][:target_length],
+                                                self.trg_ivocab))
+            print("Sample: ", self._idx_to_word(outputs[:sample_length],
+                                                self.trg_ivocab))
+            print("Sample cost: ", costs[:sample_length].sum())
+            print()
 
 
 class BleuValidator(SimpleExtension, SamplingBase):
@@ -189,7 +193,8 @@ class BleuValidator(SimpleExtension, SamplingBase):
             Load the sentence, retrieve the sample, write to file
             """
 
-            seq = self._oov_to_unk(line[0])
+            seq = self._oov_to_unk(
+                line[0], self.config['src_vocab_size'], self.unk_idx)
             input_ = numpy.tile(seq, (self.config['beam_size'], 1))
 
             # draw sample, checking to ensure we don't get an empty string back
@@ -215,9 +220,9 @@ class BleuValidator(SimpleExtension, SamplingBase):
 
                 if j == 0:
                     # Write to subprocess and file if it exists
-                    print >> mb_subprocess.stdin, trans_out
+                    print(trans_out, file=mb_subprocess.stdin)
                     if self.verbose:
-                        print >> ftrans, trans_out
+                        print(trans_out, file=ftrans)
 
             if i != 0 and i % 100 == 0:
                 logger.info(

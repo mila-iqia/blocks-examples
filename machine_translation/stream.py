@@ -48,7 +48,7 @@ class PaddingWithEOS(Padding):
 
             shapes = [numpy.asarray(sample).shape for sample in source_data]
             lengths = [shape[0] for shape in shapes]
-            max_sequence_length = max(lengths) + 1
+            max_sequence_length = max(lengths)
             rest_shape = shapes[0][1:]
             if not all([shape[1:] == rest_shape for shape in shapes]):
                 raise ValueError("All dimensions except length must be equal")
@@ -128,8 +128,8 @@ def get_tr_stream(config):
 
     # Replace out of vocabulary tokens with unk token
     stream = Mapping(stream,
-                     _oov_to_unk(src_vocab_size=config['src_vocab_size'] - 1,
-                                 trg_vocab_size=config['trg_vocab_size'] - 1,
+                     _oov_to_unk(src_vocab_size=config['src_vocab_size'],
+                                 trg_vocab_size=config['trg_vocab_size'],
                                  unk_id=config['unk_id']))
 
     # Build a batched version of stream to read k batches ahead

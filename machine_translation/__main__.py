@@ -37,5 +37,5 @@ if __name__ == "__main__":
     configuration = getattr(configurations, args.proto)()
     logger.info("Model options:\n{}".format(pprint.pformat(configuration)))
     # Get data streams and call main
-    main(configuration, get_tr_stream(configuration),
-         get_dev_stream(configuration), args.bokeh)
+    main(configuration, get_tr_stream(**configuration),
+         get_dev_stream(**configuration), args.bokeh)

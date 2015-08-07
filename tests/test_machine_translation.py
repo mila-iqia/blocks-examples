@@ -83,7 +83,7 @@ def test_sampling():
     sampling_representation = encoder.apply(
         sampling_input, theano.tensor.ones(sampling_input.shape))
     generateds = decoder.generate(sampling_input, sampling_representation)
-    model = Model(generateds)
+    model = Model(generateds[1])
 
     # Initialize model
     encoder.weights_init = decoder.weights_init = IsotropicGaussian(
@@ -96,7 +96,7 @@ def test_sampling():
     encoder.initialize()
     decoder.initialize()
 
-    # Compile a function for the generateds (list)
+    # Compile a function for the generated
     sampling_fn = model.get_theano_function()
 
     # Create literal variables
@@ -105,5 +105,5 @@ def test_sampling():
 
     # Call function and check result
     generated_step = sampling_fn(x)
-    ref = numpy.asarray([[4, 8, 0, 11]])
-    assert numpy.all(generated_step[1].flatten() == ref)
+    ref = numpy.asarray([[6, 4, 5, 10]])
+    assert numpy.all(generated_step[0].flatten() == ref)

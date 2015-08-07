@@ -8,7 +8,7 @@ from blocks.algorithms import (GradientDescent, StepClipping, AdaDelta,
                                CompositeRule)
 from blocks.extensions import FinishAfter, Printing
 from blocks.extensions.monitoring import TrainingDataMonitoring
-from blocks.extensions.plot import Plot
+from blocks.extras.extensions.plot import Plot
 from blocks.filter import VariableFilter
 from blocks.graph import ComputationGraph, apply_noise, apply_dropout
 from blocks.initialization import IsotropicGaussian, Orthogonal, Constant

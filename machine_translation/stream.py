@@ -100,14 +100,14 @@ def get_tr_stream(src_vocab, trg_vocab, src_data, trg_data,
     """Prepares the training data stream."""
 
     # Load dictionaries and ensure special tokens exist
-    src_vocab = _ensure_special_tokens(cPickle.load(open(src_vocab)),
-                                       bos_idx=0,
-                                       eos_idx=src_vocab_size - 1,
-                                       unk_idx=unk_id)
-    trg_vocab = _ensure_special_tokens(cPickle.load(open(trg_vocab)),
-                                       bos_idx=0,
-                                       eos_idx=trg_vocab_size - 1,
-                                       unk_idx=unk_id)
+    src_vocab = _ensure_special_tokens(
+        src_vocab if isinstance(src_vocab, dict)
+        else cPickle.load(open(src_vocab)),
+        bos_idx=0, eos_idx=src_vocab_size - 1, unk_idx=unk_id)
+    trg_vocab = _ensure_special_tokens(
+        trg_vocab if isinstance(trg_vocab, dict) else
+        cPickle.load(open(trg_vocab)),
+        bos_idx=0, eos_idx=trg_vocab_size - 1, unk_idx=unk_id)
 
     # Get text files from both source and target
     src_dataset = TextFile([src_data], src_vocab, None)
@@ -156,8 +156,9 @@ def get_dev_stream(val_set=None, src_vocab=None, src_vocab_size=30000,
     dev_stream = None
     if val_set is not None and src_vocab is not None:
         src_vocab = _ensure_special_tokens(
-            cPickle.load(open(src_vocab)), bos_idx=0,
-            eos_idx=src_vocab_size - 1, unk_idx=unk_id)
+            src_vocab if isinstance(src_vocab, dict) else
+            cPickle.load(open(src_vocab)),
+            bos_idx=0, eos_idx=src_vocab_size - 1, unk_idx=unk_id)
         dev_dataset = TextFile([val_set], src_vocab, None)
         dev_stream = DataStream(dev_dataset)
     return dev_stream

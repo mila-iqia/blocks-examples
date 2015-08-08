@@ -145,12 +145,13 @@ class Decoder(Initializable):
     """Decoder of RNNsearch model."""
 
     def __init__(self, vocab_size, embedding_dim, state_dim,
-                 representation_dim, **kwargs):
+                 representation_dim, theano_seed=None, **kwargs):
         super(Decoder, self).__init__(**kwargs)
         self.vocab_size = vocab_size
         self.embedding_dim = embedding_dim
         self.state_dim = state_dim
         self.representation_dim = representation_dim
+        self.theano_seed = theano_seed
 
         # Initialize gru with special initial state
         self.transition = GRUInitialState(
@@ -169,7 +170,7 @@ class Decoder(Initializable):
             source_names=['states', 'feedback',
                           self.attention.take_glimpses.outputs[0]],
             readout_dim=self.vocab_size,
-            emitter=SoftmaxEmitter(initial_output=-1),
+            emitter=SoftmaxEmitter(initial_output=-1, theano_seed=theano_seed),
             feedback_brick=LookupFeedbackWMT15(vocab_size, embedding_dim),
             post_merge=InitializableFeedforwardSequence(
                 [Bias(dim=state_dim, name='maxout_bias').apply,

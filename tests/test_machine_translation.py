@@ -79,7 +79,8 @@ def test_sampling():
     encoder = BidirectionalEncoder(
         vocab_size=10, embedding_dim=5, state_dim=8)
     decoder = Decoder(
-        vocab_size=12, embedding_dim=6, state_dim=8, representation_dim=16)
+        vocab_size=12, embedding_dim=6, state_dim=8, representation_dim=16,
+        theano_seed=1234)
     sampling_representation = encoder.apply(
         sampling_input, theano.tensor.ones(sampling_input.shape))
     generateds = decoder.generate(sampling_input, sampling_representation)
@@ -105,5 +106,5 @@ def test_sampling():
 
     # Call function and check result
     generated_step = sampling_fn(x)
-    ref = numpy.asarray([[6, 4, 5, 10]])
+    ref = numpy.asarray([[4, 4, 1, 5]])
     assert numpy.all(generated_step[0].flatten() == ref)

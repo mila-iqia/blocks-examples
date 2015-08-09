@@ -92,7 +92,7 @@ def main(config, tr_stream, dev_stream, bokeh=False):
     enc_dec_param_dict = merge(Selector(encoder).get_parameters(),
                                Selector(decoder).get_parameters())
     logger.info("Parameter names: ")
-    for name, value in enc_dec_param_dict.iteritems():
+    for name, value in enc_dec_param_dict.items():
         logger.info('    {:15}: {}'.format(value.get_value().shape, name))
     logger.info("Total number of parameters: {}"
                 .format(len(enc_dec_param_dict)))

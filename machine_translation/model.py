@@ -30,7 +30,7 @@ class LookupFeedbackWMT15(LookupFeedback):
     def feedback(self, outputs):
         assert self.output_dim == 0
 
-        shp = [outputs.shape[i] for i in xrange(outputs.ndim)]
+        shp = [outputs.shape[i] for i in range(outputs.ndim)]
         outputs_flat = outputs.flatten()
         outputs_flat_zeros = tensor.switch(outputs_flat < 0, 0,
                                            outputs_flat)

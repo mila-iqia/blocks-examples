@@ -213,9 +213,10 @@ class Decoder(Initializable):
             target_sentence_mask.shape[1]
 
     @application
-    def generate(self, source_sentence, representation):
+    def generate(self, source_sentence, representation, **kwargs):
         return self.sequence_generator.generate(
             n_steps=2 * source_sentence.shape[1],
             batch_size=source_sentence.shape[0],
             attended=representation,
-            attended_mask=tensor.ones(source_sentence.shape).T)
+            attended_mask=tensor.ones(source_sentence.shape).T,
+            **kwargs)

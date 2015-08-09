@@ -16,9 +16,9 @@ from blocks.main_loop import MainLoop
 from blocks.model import Model
 from blocks.select import Selector
 
-from checkpoint import CheckpointNMT, LoadNMT
-from model import BidirectionalEncoder, Decoder
-from sampling import BleuValidator, Sampler
+from machine_translation.checkpoint import CheckpointNMT, LoadNMT
+from machine_translation.model import BidirectionalEncoder, Decoder
+from machine_translation.sampling import BleuValidator, Sampler
 
 
 logger = logging.getLogger(__name__)

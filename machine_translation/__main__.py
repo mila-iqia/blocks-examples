@@ -19,7 +19,7 @@ import pprint
 import configurations
 
 from machine_translation import main
-from stream import get_tr_stream, get_dev_stream
+from machine_translation.stream import get_tr_stream, get_dev_stream
 
 logger = logging.getLogger(__name__)
 

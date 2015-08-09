@@ -1,4 +1,4 @@
-import cPickle
+import pickle
 import numpy
 
 from fuel.datasets import TextFile
@@ -12,7 +12,7 @@ def _ensure_special_tokens(vocab, bos_idx=0, eos_idx=0, unk_idx=1):
     """Ensures special tokens exist in the dictionary."""
 
     # remove tokens if they exist in some other index
-    tokens_to_remove = [k for k, v in vocab.iteritems()
+    tokens_to_remove = [k for k, v in vocab.items()
                         if v in [bos_idx, eos_idx, unk_idx]]
     for token in tokens_to_remove:
         vocab.pop(token)

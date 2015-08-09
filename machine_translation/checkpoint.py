@@ -1,5 +1,5 @@
 
-import cPickle
+import pickle
 import logging
 import numpy
 import os
@@ -77,7 +77,7 @@ class CheckpointNMT(SimpleExtension, SaveLoadUtils):
     def dump(self, main_loop):
         if not os.path.exists(self.path_to_folder):
             os.mkdir(self.path_to_folder)
-        print ""
+        print("")
         logger.info(" Saving model")
         start = time.time()
         logger.info(" ...saving parameters")

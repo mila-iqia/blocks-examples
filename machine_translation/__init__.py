@@ -16,9 +16,9 @@ from blocks.main_loop import MainLoop
 from blocks.model import Model
 from blocks.select import Selector
 
-from checkpoint import CheckpointNMT, LoadNMT
-from model import BidirectionalEncoder, Decoder
-from sampling import BleuValidator, Sampler
+from machine_translation.checkpoint import CheckpointNMT, LoadNMT
+from machine_translation.model import BidirectionalEncoder, Decoder
+from machine_translation.sampling import BleuValidator, Sampler
 
 
 logger = logging.getLogger(__name__)
@@ -92,7 +92,7 @@ def main(config, tr_stream, dev_stream, bokeh=False):
     enc_dec_param_dict = merge(Selector(encoder).get_parameters(),
                                Selector(decoder).get_parameters())
     logger.info("Parameter names: ")
-    for name, value in enc_dec_param_dict.iteritems():
+    for name, value in enc_dec_param_dict.items():
         logger.info('    {:15}: {}'.format(value.get_value().shape, name))
     logger.info("Total number of parameters: {}"
                 .format(len(enc_dec_param_dict)))

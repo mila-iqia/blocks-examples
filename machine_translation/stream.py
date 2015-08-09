@@ -1,4 +1,4 @@
-import cPickle
+import pickle
 import numpy
 
 from fuel.datasets import TextFile

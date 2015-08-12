@@ -20,7 +20,6 @@ from machine_translation.model import BidirectionalEncoder, Decoder
 from machine_translation.sampling import BleuValidator, Sampler
 
 try:
-    import bokeh
     from blocks.extras.extensions.plot import Plot
     BOKEH_AVAILABLE = True
 except ImportError:

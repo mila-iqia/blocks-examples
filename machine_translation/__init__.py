@@ -8,7 +8,6 @@ from blocks.algorithms import (GradientDescent, StepClipping, AdaDelta,
                                CompositeRule)
 from blocks.extensions import FinishAfter, Printing
 from blocks.extensions.monitoring import TrainingDataMonitoring
-from blocks.extras.extensions.plot import Plot
 from blocks.filter import VariableFilter
 from blocks.graph import ComputationGraph, apply_noise, apply_dropout
 from blocks.initialization import IsotropicGaussian, Orthogonal, Constant
@@ -20,11 +19,16 @@ from machine_translation.checkpoint import CheckpointNMT, LoadNMT
 from machine_translation.model import BidirectionalEncoder, Decoder
 from machine_translation.sampling import BleuValidator, Sampler
 
+try:
+    from blocks.extras.extensions.plot import Plot
+    BOKEH_AVAILABLE = True
+except ImportError:
+    BOKEH_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
 
-def main(config, tr_stream, dev_stream, bokeh=False):
+def main(config, tr_stream, dev_stream, use_bokeh=False):
 
     # Create Theano variables
     logger.info('Creating theano variables')
@@ -145,7 +149,7 @@ def main(config, tr_stream, dev_stream, bokeh=False):
         extensions.append(LoadNMT(config['saveto']))
 
     # Plot cost in bokeh if necessary
-    if bokeh:
+    if use_bokeh and BOKEH_AVAILABLE:
         extensions.append(
             Plot('Cs-En', channels=[['decoder_cost_cost']],
                  after_batch=True))

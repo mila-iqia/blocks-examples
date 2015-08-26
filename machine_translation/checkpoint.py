@@ -72,7 +72,7 @@ class CheckpointNMT(SimpleExtension, SaveLoadUtils):
         secure_dump(main_loop.iteration_state, self.path_to_iteration_state)
 
     def dump_log(self, main_loop):
-        secure_dump(main_loop.log, self.path_to_log, cPickle.dump)
+        secure_dump(main_loop.log, self.path_to_log, pickle.dump)
 
     def dump(self, main_loop):
         if not os.path.exists(self.path_to_folder):
@@ -128,7 +128,7 @@ class LoadNMT(TrainingExtension, SaveLoadUtils):
 
     def load_log(self):
         with open(self.path_to_log, "rb") as source:
-            return cPickle.load(source)
+            return pickle.load(source)
 
     def load_to(self, main_loop):
         """Loads the dump from the root folder into the main loop."""

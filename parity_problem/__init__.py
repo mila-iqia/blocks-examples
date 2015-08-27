@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import random
 import numpy as np
 import theano
@@ -21,7 +23,7 @@ from blocks.main_loop import MainLoop
 def generate_data(max_seq_length, batch_size, num_batches):
     x = []
     y = []
-    for i in xrange(num_batches):
+    for i in range(num_batches):
         # it's important to include sequences of different length in
         # the training data in order the model was able to learn something
         seq_length = random.randint(1, max_seq_length)
@@ -90,10 +92,11 @@ def main(max_seq_length, lstm_dim, batch_size, num_batches, num_epochs):
                                      Printing(), ProgressBar()])
     main_loop.run()
 
-    print 'Learned weights:'
+    print('Learned weights:')
     for layer in (x_to_h, lstm, h_to_o):
-        print "Layer '%s':" % layer.name
+        print("Layer '%s':" % layer.name)
         for param in layer.parameters:
-            print param.name, ': ', param.get_value()
-        print
+            print(param.name, ': ', param.get_value())
+        print()
 
+    return main_loop

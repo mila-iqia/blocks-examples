@@ -1,4 +1,3 @@
-import pickle
 import numpy
 
 from fuel.datasets import TextFile
@@ -6,6 +5,8 @@ from fuel.schemes import ConstantScheme
 from fuel.streams import DataStream
 from fuel.transformers import (
     Merge, Batch, Filter, Padding, SortMapping, Unpack, Mapping)
+
+from six.moves import cPickle
 
 
 def _ensure_special_tokens(vocab, bos_idx=0, eos_idx=0, unk_idx=1):

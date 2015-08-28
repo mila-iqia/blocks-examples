@@ -1,11 +1,11 @@
 
-import pickle
 import logging
 import numpy
 import os
 import time
 
 from contextlib import closing
+from six.moves import cPickle
 
 from blocks.extensions.saveload import SAVED_TO, LOADED_FROM
 from blocks.extensions import TrainingExtension, SimpleExtension

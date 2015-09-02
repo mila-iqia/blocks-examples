@@ -113,7 +113,6 @@ def tokenize_text_files(files_to_tokenize, tokenizer):
         logger.info("...writing tokenized file [{}]".format(out_file))
         var = ["perl", tokenizer,  "-l", name.split('.')[-1]]
         if not os.path.exists(out_file):
-            sp = None
             with open(name, 'r') as inp:
                 with open(out_file, 'w', 0) as out:
                     subprocess.check_call(
@@ -159,7 +158,6 @@ def merge_parallel(src_filename, trg_filename, merged_filename):
     with open(src_filename, 'r') as left:
         with open(trg_filename, 'r') as right:
             with open(merged_filename, 'w') as final:
-                counter = 0
                 while True:
                     lline = left.readline()
                     rline = right.readline()
@@ -167,7 +165,6 @@ def merge_parallel(src_filename, trg_filename, merged_filename):
                         break
                     if (lline != '\n') and (rline != '\n'):
                         final.write(lline[:-1] + ' ||| ' + rline)
-                    counter += 1
 
 
 def split_parallel(merged_filename, src_filename, trg_filename):

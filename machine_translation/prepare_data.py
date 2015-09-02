@@ -160,7 +160,7 @@ def merge_parallel(src_filename, trg_filename, merged_filename):
                 while True:
                     lline = left.readline()
                     rline = right.readline()
-                    if (lline == '') or (rline == ''):
+                    if (lline == '') and (rline == ''):
                         break
                     if (lline != '\n') and (rline != '\n'):
                         final.write(lline[:-1] + ' ||| ' + rline)

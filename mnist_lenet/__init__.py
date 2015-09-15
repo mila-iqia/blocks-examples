@@ -28,7 +28,6 @@ from blocks.initialization import Constant, Uniform
 from blocks.main_loop import MainLoop
 from blocks.model import Model
 from blocks.monitoring import aggregation
-from blocks.utils import named_copy
 from fuel.datasets import MNIST
 from fuel.schemes import ShuffledScheme
 from fuel.streams import DataStream
@@ -173,10 +172,10 @@ def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
 
     # Normalize input and apply the convnet
     probs = convnet.apply(x)
-    cost = named_copy(CategoricalCrossEntropy().apply(y.flatten(),
-                      probs), 'cost')
-    error_rate = named_copy(MisclassificationRate().apply(y.flatten(), probs),
-                            'error_rate')
+    cost = CategoricalCrossEntropy().apply(y.flatten(),
+            probs).copy(name='cost')
+    error_rate = MisclassificationRate().apply(y.flatten(), probs).copy(
+            name='error_rate')
 
     cg = ComputationGraph([cost, error_rate])
 

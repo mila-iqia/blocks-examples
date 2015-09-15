@@ -35,7 +35,7 @@ from blocks.extensions.saveload import Checkpoint
 from blocks.extensions.monitoring import TrainingDataMonitoring
 from blocks.main_loop import MainLoop
 from blocks.filter import VariableFilter
-from blocks.utils import named_copy, dict_union
+from blocks.utils import dict_union
 
 from blocks.search import BeamSearch
 
@@ -176,7 +176,7 @@ def main(mode, save_path, num_batches, data_path=None):
         targets_mask = tensor.matrix("targets_mask")
         batch_cost = reverser.cost(
             chars, chars_mask, targets, targets_mask).sum()
-        batch_size = named_copy(chars.shape[1], "batch_size")
+        batch_size = chars.shape[1].copy(name="batch_size")
         cost = aggregation.mean(batch_cost, batch_size)
         cost.name = "sequence_log_likelihood"
         logger.info("Cost graph is built")
@@ -208,23 +208,22 @@ def main(mode, save_path, num_batches, data_path=None):
         (activations,) = VariableFilter(
             applications=[generator.transition.apply],
             name=generator.transition.apply.states[0])(cg.variables)
-        max_length = named_copy(chars.shape[0], "max_length")
-        cost_per_character = named_copy(
-            aggregation.mean(batch_cost, batch_size * max_length),
-            "character_log_likelihood")
-        min_energy = named_copy(energies.min(), "min_energy")
-        max_energy = named_copy(energies.max(), "max_energy")
-        mean_activation = named_copy(abs(activations).mean(),
-                                     "mean_activation")
+        max_length = chars.shape[0].copy(name="max_length")
+        cost_per_character = aggregation.mean(
+            batch_cost, batch_size * max_length).copy(
+                named="character_log_likelihood")
+        min_energy = energies.min().copy(name="min_energy")
+        max_energy = energies.max().copy(name="max_energy")
+        mean_activation = abs(activations).mean().copy(
+                name="mean_activation")
         observables = [
             cost, min_energy, max_energy, mean_activation,
             batch_size, max_length, cost_per_character,
             algorithm.total_step_norm, algorithm.total_gradient_norm]
         for name, parameter in parameters.items():
-            observables.append(named_copy(
-                parameter.norm(2), name + "_norm"))
-            observables.append(named_copy(
-                algorithm.gradients[parameter].norm(2), name + "_grad_norm"))
+            observables.append(parameter.norm(2).copy(name + "_norm"))
+            observables.append(algorithm.gradients[parameter].norm(2).copy(
+                name + "_grad_norm"))
 
         # Construct the main loop and start training!
         average_monitoring = TrainingDataMonitoring(

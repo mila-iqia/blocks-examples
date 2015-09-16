@@ -211,7 +211,7 @@ def main(mode, save_path, num_batches, data_path=None):
         max_length = chars.shape[0].copy(name="max_length")
         cost_per_character = aggregation.mean(
             batch_cost, batch_size * max_length).copy(
-                named="character_log_likelihood")
+                name="character_log_likelihood")
         min_energy = energies.min().copy(name="min_energy")
         max_energy = energies.max().copy(name="max_energy")
         mean_activation = abs(activations).mean().copy(

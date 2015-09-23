@@ -8,6 +8,8 @@ import tarfile
 import urllib2
 import uuid
 
+from picklable_itertools.extras import equizip
+
 TRAIN_DATA_URL = 'http://www.statmt.org/wmt15/training-parallel-nc-v10.tgz'
 VALID_DATA_URL = 'http://www.statmt.org/wmt15/dev-v2.tgz'
 PREPROCESS_URL = 'https://raw.githubusercontent.com/lisa-groundhog/' +\
@@ -158,11 +160,7 @@ def merge_parallel(src_filename, trg_filename, merged_filename):
     with open(src_filename, 'r') as left:
         with open(trg_filename, 'r') as right:
             with open(merged_filename, 'w') as final:
-                while True:
-                    lline = left.readline()
-                    rline = right.readline()
-                    if (lline == '') and (rline == ''):
-                        break
+                for lline, rline in equizip(left, right):
                     if (lline != '\n') and (rline != '\n'):
                         final.write(lline[:-1] + ' ||| ' + rline)
 
@@ -187,9 +185,9 @@ def shuffle_parallel(src_filename, trg_filename):
     if not os.path.exists(out_src) or not os.path.exists(out_trg):
         try:
             merge_parallel(src_filename, trg_filename, merged_filename)
-            subprocess.check_call(" shuf {} > {} ".format(merged_filename,
-                                                    shuffled_filename),
-                            shell=True)
+            subprocess.check_call(
+                " shuf {} > {} ".format(merged_filename, shuffled_filename),
+                shell=True)
             split_parallel(shuffled_filename, out_src, out_trg)
             logger.info(
                 "...files shuffled [{}] and [{}]".format(out_src, out_trg))

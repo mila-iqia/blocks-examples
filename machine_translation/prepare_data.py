@@ -8,6 +8,8 @@ import tarfile
 import urllib2
 import uuid
 
+from picklable_itertools.extras import equizip
+
 TRAIN_DATA_URL = 'http://www.statmt.org/wmt15/training-parallel-nc-v10.tgz'
 VALID_DATA_URL = 'http://www.statmt.org/wmt15/dev-v2.tgz'
 PREPROCESS_URL = 'https://raw.githubusercontent.com/lisa-groundhog/' +\
@@ -115,7 +117,8 @@ def tokenize_text_files(files_to_tokenize, tokenizer):
         if not os.path.exists(out_file):
             with open(name, 'r') as inp:
                 with open(out_file, 'w', 0) as out:
-                    subprocess.Popen(var, stdin=inp, stdout=out, shell=False)
+                    subprocess.check_call(
+                        var, stdin=inp, stdout=out, shell=False)
         else:
             logger.info("...file exists [{}]".format(out_file))
 
@@ -135,7 +138,7 @@ def create_vocabularies(tr_files, preprocess_file):
                   if n.endswith(args.target)][0]]) + '.tok'
     logger.info("Creating source vocabulary [{}]".format(src_vocab_name))
     if not os.path.exists(src_vocab_name):
-        subprocess.call(" python {} -d {} -v {} {}".format(
+        subprocess.check_call(" python {} -d {} -v {} {}".format(
             preprocess_file, src_vocab_name, args.source_vocab,
             os.path.join(OUTPUT_DIR, src_filename)),
             shell=True)
@@ -144,7 +147,7 @@ def create_vocabularies(tr_files, preprocess_file):
 
     logger.info("Creating target vocabulary [{}]".format(trg_vocab_name))
     if not os.path.exists(trg_vocab_name):
-        subprocess.call(" python {} -d {} -v {} {}".format(
+        subprocess.check_call(" python {} -d {} -v {} {}".format(
             preprocess_file, trg_vocab_name, args.target_vocab,
             os.path.join(OUTPUT_DIR, trg_filename)),
             shell=True)
@@ -157,11 +160,7 @@ def merge_parallel(src_filename, trg_filename, merged_filename):
     with open(src_filename, 'r') as left:
         with open(trg_filename, 'r') as right:
             with open(merged_filename, 'w') as final:
-                while True:
-                    lline = left.readline()
-                    rline = right.readline()
-                    if (lline == '') or (rline == ''):
-                        break
+                for lline, rline in equizip(left, right):
                     if (lline != '\n') and (rline != '\n'):
                         final.write(lline[:-1] + ' ||| ' + rline)
 
@@ -186,9 +185,9 @@ def shuffle_parallel(src_filename, trg_filename):
     if not os.path.exists(out_src) or not os.path.exists(out_trg):
         try:
             merge_parallel(src_filename, trg_filename, merged_filename)
-            subprocess.call(" shuf {} > {} ".format(merged_filename,
-                                                    shuffled_filename),
-                            shell=True)
+            subprocess.check_call(
+                " shuf {} > {} ".format(merged_filename, shuffled_filename),
+                shell=True)
             split_parallel(shuffled_filename, out_src, out_trg)
             logger.info(
                 "...files shuffled [{}] and [{}]".format(out_src, out_trg))

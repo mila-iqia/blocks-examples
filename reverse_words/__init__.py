@@ -270,7 +270,7 @@ def main(mode, save_path, num_batches, data_path=None):
             """
             if mode == "beam_search":
                 samples, = VariableFilter(
-                    bricks=[reverser.generator], name="outputs")(
+                    applications=[reverser.generator.generate], name="outputs")(
                         ComputationGraph(generated[1]))
                 # NOTE: this will recompile beam search functions
                 # every time user presses Enter. Do not create

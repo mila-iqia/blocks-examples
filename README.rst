@@ -31,8 +31,7 @@ launching command as simple as possible.
 
 Understanding the examples
 ---------------------------
-The bulk of the ``blocks`` code consists of 'plain functions' that are 
-launched from the ``main()`` function in each folder : ``EXAMPLE-NAME/__init__.py``.
+The entry point of each example is ``main()`` function in ``EXAMPLE-NAME/__init__.py``.
 
 We're currently working on getting better documentation coverage of the 
 examples, and GitHub will helpfully display the contents of each 
@@ -43,3 +42,12 @@ documentation :
 
 * `Blocks documentation <http://blocks.readthedocs.org/>`_
 * `Fuel documentation <http://fuel.readthedocs.org/>`_
+
+Examples of projects using Blocks
+---------------------------------
+We host only standard and relatively compact examples here. For more
+advanced and real-world examples see the following project, all of which heavily use 
+Blocks:
+
+* `DRAW model <https://github.com/jbornschein/draw>`
+* `Speech recognition <https://github.com/rizar/attention-lvcsr>`

@@ -1,5 +1,7 @@
 from __future__ import print_function
 import tempfile
+import sys
+from six.moves import StringIO
 
 from blocks.config import config
 
@@ -15,4 +17,11 @@ def test_reverse_words():
             for i in range(10):
                 print("A line.", file=data)
         main("train", f_save.name, 1, [f_data.name])
+
+        real_stdin = sys.stdin
+        sys.stdin = StringIO('abc\n10\n')
+        main("beam_search", f_save.name, 10)
+        sys.stdin = real_stdin
+
+
     config.recursion_limit = old_limit

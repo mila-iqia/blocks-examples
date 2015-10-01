@@ -3,7 +3,7 @@ import logging
 import pprint
 import math
 import numpy
-import os
+import traceback
 import operator
 
 import theano
@@ -296,10 +296,16 @@ def main(mode, save_path, num_batches, data_path=None):
             return outputs, costs
 
         while True:
-            line = input("Enter a sentence\n")
-            message = ("Enter the number of samples\n" if mode == "sample"
-                       else "Enter the beam size\n")
-            batch_size = int(input(message))
+            try:
+                line = input("Enter a sentence\n")
+                message = ("Enter the number of samples\n" if mode == "sample"
+                        else "Enter the beam size\n")
+                batch_size = int(input(message))
+            except EOFError:
+                break
+            except Exception:
+                traceback.print_exc()
+                continue
 
             encoded_input = [char2code.get(char, char2code["<UNK>"])
                              for char in line.lower().strip()]

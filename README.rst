@@ -49,5 +49,6 @@ We host only standard and relatively compact examples here. For more
 advanced and real-world examples see the following project, all of which heavily use 
 Blocks:
 
+* `Character-level RNN <https://github.com/johnarevalo/blocks-char-rnn>`_
 * `DRAW model <https://github.com/jbornschein/draw>`_
 * `Speech recognition <https://github.com/rizar/attention-lvcsr>`_

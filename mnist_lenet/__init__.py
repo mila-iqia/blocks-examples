@@ -16,8 +16,8 @@ from theano import tensor
 from blocks.algorithms import GradientDescent, Scale
 from blocks.bricks import (MLP, Rectifier, Initializable, FeedforwardSequence,
                            Softmax)
-from blocks.bricks.conv import (
-    ConvolutionalLayer, ConvolutionalSequence, Flattener)
+from blocks.bricks.conv import (ConvolutionalActivation, ConvolutionalSequence,
+                                Flattener, MaxPooling)
 from blocks.bricks.cost import CategoricalCrossEntropy, MisclassificationRate
 from blocks.extensions import FinishAfter, Timing, Printing, ProgressBar
 from blocks.extensions.monitoring import (DataStreamMonitoring,
@@ -31,6 +31,7 @@ from blocks.monitoring import aggregation
 from fuel.datasets import MNIST
 from fuel.schemes import ShuffledScheme
 from fuel.streams import DataStream
+from toolz.itertoolz import interleave
 
 
 class LeNet(FeedforwardSequence, Initializable):
@@ -83,20 +84,21 @@ class LeNet(FeedforwardSequence, Initializable):
         self.top_mlp_dims = top_mlp_dims
         self.border_mode = border_mode
 
-        parameters = zip(conv_activations, filter_sizes, feature_maps,
-                         pooling_sizes)
+        conv_parameters = zip(conv_activations, filter_sizes, feature_maps)
 
         # Construct convolutional layers with corresponding parameters
-        self.layers = [ConvolutionalLayer(filter_size=filter_size,
-                                          num_filters=num_filter,
-                                          pooling_size=pooling_size,
-                                          activation=activation.apply,
-                                          conv_step=self.conv_step,
-                                          border_mode=self.border_mode,
-                                          name='conv_pool_{}'.format(i))
-                       for i, (activation, filter_size, num_filter,
-                               pooling_size)
-                       in enumerate(parameters)]
+        self.layers = list(interleave([
+            (ConvolutionalActivation(filter_size=filter_size,
+                                     num_filters=num_filter,
+                                     activation=activation.apply,
+                                     step=self.conv_step,
+                                     border_mode=self.border_mode,
+                                     name='conv_{}'.format(i))
+             for i, (activation, filter_size, num_filter)
+             in enumerate(conv_parameters)),
+            (MaxPooling(size, name='pool_{}'.format(i))
+             for i, size in enumerate(pooling_sizes))]))
+
         self.conv_sequence = ConvolutionalSequence(self.layers, num_channels,
                                                    image_size=image_shape)
 
@@ -164,8 +166,8 @@ def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
     logging.info("Input dim: {} {} {}".format(
         *convnet.children[0].get_dim('input_')))
     for i, layer in enumerate(convnet.layers):
-        logging.info("Layer {} dim: {} {} {}".format(
-            i, *layer.get_dim('output')))
+        logging.info("Layer {} ({}) dim: {} {} {}".format(
+            i, layer.__class__.__name__, *layer.get_dim('output')))
 
     x = tensor.tensor4('features')
     y = tensor.lmatrix('targets')

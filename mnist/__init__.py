@@ -24,7 +24,7 @@ from blocks.extensions.monitoring import (DataStreamMonitoring,
 from blocks.main_loop import MainLoop
 
 try:
-    from blocks.extras.extensions.plot import Plot
+    from blocks_extras.extensions.plot import Plot
     BLOCKS_EXTRAS_AVAILABLE = True
 except:
     BLOCKS_EXTRAS_AVAILABLE = False

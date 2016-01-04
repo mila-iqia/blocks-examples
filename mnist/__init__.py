@@ -37,7 +37,7 @@ def main(save_to, num_epochs):
     mlp.initialize()
     x = tensor.matrix('features')
     y = tensor.lmatrix('targets')
-    probs = mlp.apply(tensor.flatten(x, outdim=2))
+    probs = mlp.apply(x)
     cost = CategoricalCrossEntropy().apply(y.flatten(), probs)
     error_rate = MisclassificationRate().apply(y.flatten(), probs)
 

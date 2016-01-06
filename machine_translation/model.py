@@ -112,7 +112,7 @@ class GRUInitialState(GatedRecurrent):
     """Gated Recurrent with special initial state.
 
     Initial state of Gated Recurrent is set by an MLP that conditions on the
-    last hidden state of the bidirectional encoder, applies an affine
+    first hidden state of the bidirectional encoder, applies an affine
     transformation followed by a tanh non-linearity to set initial state.
 
     """

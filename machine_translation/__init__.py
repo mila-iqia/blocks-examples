@@ -20,7 +20,7 @@ from machine_translation.model import BidirectionalEncoder, Decoder
 from machine_translation.sampling import BleuValidator, Sampler
 
 try:
-    from blocks.extras.extensions.plot import Plot
+    from blocks_extras.extensions.plot import Plot
     BOKEH_AVAILABLE = True
 except ImportError:
     BOKEH_AVAILABLE = False

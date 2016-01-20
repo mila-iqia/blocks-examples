@@ -26,6 +26,9 @@ def main(num_epochs=50, batch_normalized=True, alpha=0.1):
 
     Parameters
     ----------
+    num_epochs : int, optional
+        Number of epochs for which to train.
+
     batch_normalized : bool, optional
         Batch-normalize the training graph. Defaults to `True`.
 
@@ -98,13 +101,14 @@ def main(num_epochs=50, batch_normalized=True, alpha=0.1):
                                                           test_stream,
                                                           prefix='test'),
                                      Printing(),
-                                     FinishAfter(after_n_epochs=50)])
+                                     FinishAfter(after_n_epochs=num_epochs)])
     main_loop.run()
+    return main_loop
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Batch normalization demo.")
-    parser.add_argument('-n', '--num-epochs', default=50,
+    parser.add_argument('--num-epochs', '-n', default=50, type=int,
                         help='Number of epochs for which to train.')
     parser.add_argument('--no-batch-normalize', '-N', action='store_const',
                         const=True, default=False,

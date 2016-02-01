@@ -16,7 +16,7 @@ from theano import tensor
 from blocks.algorithms import GradientDescent, Scale
 from blocks.bricks import (MLP, Rectifier, Initializable, FeedforwardSequence,
                            Softmax)
-from blocks.bricks.conv import (ConvolutionalActivation, ConvolutionalSequence,
+from blocks.bricks.conv import (Convolutional, ConvolutionalSequence,
                                 Flattener, MaxPooling)
 from blocks.bricks.cost import CategoricalCrossEntropy, MisclassificationRate
 from blocks.extensions import FinishAfter, Timing, Printing, ProgressBar
@@ -84,18 +84,18 @@ class LeNet(FeedforwardSequence, Initializable):
         self.top_mlp_dims = top_mlp_dims
         self.border_mode = border_mode
 
-        conv_parameters = zip(conv_activations, filter_sizes, feature_maps)
+        conv_parameters = zip(filter_sizes, feature_maps)
 
         # Construct convolutional layers with corresponding parameters
         self.layers = list(interleave([
-            (ConvolutionalActivation(filter_size=filter_size,
-                                     num_filters=num_filter,
-                                     activation=activation.apply,
-                                     step=self.conv_step,
-                                     border_mode=self.border_mode,
-                                     name='conv_{}'.format(i))
-             for i, (activation, filter_size, num_filter)
+            (Convolutional(filter_size=filter_size,
+                           num_filters=num_filter,
+                           step=self.conv_step,
+                           border_mode=self.border_mode,
+                           name='conv_{}'.format(i))
+             for i, (filter_size, num_filter)
              in enumerate(conv_parameters)),
+            conv_activations,
             (MaxPooling(size, name='pool_{}'.format(i))
              for i, size in enumerate(pooling_sizes))]))
 

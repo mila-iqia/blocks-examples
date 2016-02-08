@@ -15,7 +15,7 @@ from theano import tensor
 
 from blocks.algorithms import GradientDescent, Scale
 from blocks.bricks import (MLP, Rectifier, Initializable, FeedforwardSequence,
-                           Softmax)
+                           Softmax, Activation)
 from blocks.bricks.conv import (Convolutional, ConvolutionalSequence,
                                 Flattener, MaxPooling)
 from blocks.bricks.cost import CategoricalCrossEntropy, MisclassificationRate
@@ -166,9 +166,12 @@ def main(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
     logging.info("Input dim: {} {} {}".format(
         *convnet.children[0].get_dim('input_')))
     for i, layer in enumerate(convnet.layers):
-        logging.info("Layer {} ({}) dim: {} {} {}".format(
-            i, layer.__class__.__name__, *layer.get_dim('output')))
-
+        if isinstance(layer, Activation):
+            logging.info("Layer {} ({})".format(
+                i, layer.__class__.__name__))
+        else:
+            logging.info("Layer {} ({}) dim: {} {} {}".format(
+                i, layer.__class__.__name__, *layer.get_dim('output')))
     x = tensor.tensor4('features')
     y = tensor.lmatrix('targets')
 

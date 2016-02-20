@@ -244,7 +244,6 @@ def main(mode, save_path, num_batches, data_path=None):
                 # Saving the model and the log separately is convenient,
                 # because loading the whole pickle takes quite some time.
                 Checkpoint(save_path, every_n_batches=500,
-                           parameters=model.parameters,
                            save_separately=["model", "log"]),
                 Printing(every_n_batches=1)])
         main_loop.run()

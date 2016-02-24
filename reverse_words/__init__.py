@@ -24,7 +24,7 @@ from blocks.graph import ComputationGraph
 from fuel.transformers import Mapping, Batch, Padding, Filter
 from fuel.datasets import OneBillionWord, TextFile
 from fuel.schemes import ConstantScheme
-from blocks.serialization import load_parameter_values
+from blocks.serialization import load_parameters
 from blocks.algorithms import (GradientDescent, Scale,
                                StepClipping, CompositeRule)
 from blocks.initialization import Orthogonal, IsotropicGaussian, Constant
@@ -228,6 +228,7 @@ def main(mode, save_path, num_batches, data_path=None):
         # Construct the main loop and start training!
         average_monitoring = TrainingDataMonitoring(
             observables, prefix="average", every_n_batches=10)
+        
         main_loop = MainLoop(
             model=model,
             data_stream=data_stream,
@@ -251,7 +252,8 @@ def main(mode, save_path, num_batches, data_path=None):
         generated = reverser.generate(chars)
         model = Model(generated)
         logger.info("Loading the model..")
-        model.set_parameter_values(load_parameter_values(save_path))
+        with open(save_path, 'rb') as f:
+            model.set_parameter_values(load_parameters(f))
 
         def generate(input_):
             """Generate output sequences for an input sequence.

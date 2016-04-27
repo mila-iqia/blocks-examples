@@ -203,7 +203,7 @@ class BleuValidator(SimpleExtension, SamplingBase):
                 self.beam_search.search(
                     input_values={self.source_sentence: input_},
                     max_length=3*len(seq), eol_symbol=self.trg_eos_idx,
-                    ignore_first_eol=False)
+                    ignore_first_eol=True)
 
             # normalize costs according to the sequence lengths
             if self.normalize:

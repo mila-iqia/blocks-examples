@@ -46,7 +46,7 @@ class SaveLoadUtils(object):
         return param_values
 
     def save_parameter_values(self, param_values, path):
-        param_values = {name.replace("/", "-"): param
+        param_values = {name.replace("/", BRICK_DELIMITER): param
                         for name, param in param_values.items()}
         numpy.savez(path, **param_values)
 

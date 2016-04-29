@@ -117,7 +117,7 @@ class BleuValidator(SimpleExtension, SamplingBase):
     """Implements early stopping based on BLEU score."""
 
     def __init__(self, source_sentence, samples, model, data_stream,
-                 config, n_best=1, track_n_models=1, trg_ivocab=None,
+                 config, n_best=1, track_n_models=1,
                  normalize=True, **kwargs):
         # TODO: change config structure
         super(BleuValidator, self).__init__(**kwargs)
@@ -133,7 +133,6 @@ class BleuValidator(SimpleExtension, SamplingBase):
 
         # Helpers
         self.vocab = data_stream.dataset.dictionary
-        self.trg_ivocab = trg_ivocab
         self.unk_sym = data_stream.dataset.unk_token
         self.eos_sym = data_stream.dataset.eos_token
         self.unk_idx = self.vocab[self.unk_sym]
@@ -181,10 +180,11 @@ class BleuValidator(SimpleExtension, SamplingBase):
         total_cost = 0.0
 
         # Get target vocabulary
-        if not self.trg_ivocab:
-            sources = self._get_attr_rec(self.main_loop, 'data_stream')
-            trg_vocab = sources.data_streams[1].dataset.dictionary
-            self.trg_ivocab = {v: k for k, v in trg_vocab.items()}
+        sources = self._get_attr_rec(self.main_loop, 'data_stream')
+        trg_vocab = sources.data_streams[1].dataset.dictionary
+        self.trg_ivocab = {v: k for k, v in trg_vocab.items()}
+        trg_eos_sym = sources.data_streams[1].dataset.eos_token
+        self.trg_eos_idx = trg_vocab[trg_eos_sym]
 
         if self.verbose:
             ftrans = open(self.config['val_set_out'], 'w')
@@ -202,7 +202,7 @@ class BleuValidator(SimpleExtension, SamplingBase):
             trans, costs = \
                 self.beam_search.search(
                     input_values={self.source_sentence: input_},
-                    max_length=3*len(seq), eol_symbol=self.eos_idx,
+                    max_length=3*len(seq), eol_symbol=self.trg_eos_idx,
                     ignore_first_eol=True)
 
             # normalize costs according to the sequence lengths
